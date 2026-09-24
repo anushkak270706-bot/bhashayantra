@@ -8,6 +8,13 @@ from backend.services.transliterator import Transliterator
 from backend.services.language_detector import LanguageDetector
 from backend.config.languages import LANGUAGES
 
+from backend.engines.indicxlit_engine import IndicXlitEngine
+from backend.engines.script_bridge import ScriptBridge
+from backend.engines.router import TransliterationRouter
+from backend.services.script_detector import ScriptDetector
+from backend.services.confidence_evaluator import ConfidenceEvaluator
+from backend.services.candidate_ranker import CandidateRanker
+from backend.services.human_verification import HumanVerificationService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,7 +63,18 @@ DETECTED_TO_INTERNAL = {
 # Load models once when the backend starts
 transliterator = Transliterator()
 language_detector = LanguageDetector()
+script_detector = ScriptDetector()
+confidence_evaluator = ConfidenceEvaluator()
+candidate_ranker = CandidateRanker()
+human_verification = HumanVerificationService()
 
+indicxlit_engine = IndicXlitEngine(transliterator)
+script_bridge = ScriptBridge()
+
+router = TransliterationRouter(
+    indicxlit_engine=indicxlit_engine,
+    script_bridge=script_bridge
+)
 
 class TransliterationRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=500)
@@ -75,6 +93,10 @@ class AutoTransliterationRequest(BaseModel):
         max_length=5
     )
 
+class ScriptConversionRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=500)
+    source_script: Optional[str] = None
+    target_script: str
 
 @app.get("/")
 def home():
@@ -103,6 +125,60 @@ def detect_language(request: LanguageDetectionRequest):
         "input": request.text,
         "predictions": predictions
     }
+
+
+@app.post("/convert-script")
+def convert_script(request: ScriptConversionRequest):
+
+    if request.source_script:
+        source_script = request.source_script
+        detector_confidence = None
+    else:
+        detection = script_detector.detect(request.text)
+        source_script = detection["script"]
+        detector_confidence = detection["confidence"]
+
+    if source_script == "unknown":
+        raise HTTPException(
+            status_code=400,
+            detail="Could not detect the source script."
+        )
+
+    result = router.route(
+        input_type="script"
+    ).convert(
+        text=request.text,
+        source_script=source_script,
+        target_script=request.target_script
+    )
+
+    confidence = confidence_evaluator.evaluate(
+    detector_confidence if detector_confidence is not None else 1.0
+    )
+
+    candidates = candidate_ranker.rank([
+    {
+        "text": result,
+        "score": confidence["score"]
+    }
+])
+
+    review = human_verification.create_review(
+    confidence=confidence,
+    candidates=candidates
+)
+
+    return {
+    "input": request.text,
+    "source_script": source_script,
+    "target_script": request.target_script,
+    "detector_confidence": detector_confidence,
+    "confidence": confidence,
+    "candidates": candidates,
+    "review": review,
+    "status": "success",
+    "output": result
+}
 
 
 @app.post("/auto-transliterate")
@@ -170,7 +246,12 @@ def auto_transliterate(request: AutoTransliterationRequest):
         )
 
     # Transliterate using the selected or detected language
-    result = transliterator.roman_to_indic(
+        engine = router.route(
+        input_type="text",
+        language_code=internal_code
+    )
+
+    result = engine.transliterate(
         text=request.text,
         language_code=internal_code
     )
