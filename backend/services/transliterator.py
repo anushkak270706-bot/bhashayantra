@@ -1,5 +1,6 @@
 import os
 import re
+import unicodedata
 
 import ctranslate2
 from huggingface_hub import snapshot_download
@@ -53,8 +54,7 @@ class Transliterator:
             return_scores=True,
         )
         return [
-            [("".join(h), float(s)) for h, s in zip(r.hypotheses, r.scores)]
-            for r in results
+            [(unicodedata.normalize("NFC", "".join(h)), float(s)) for h, s in zip(r.hypotheses, r.scores)]            for r in results
         ]
 
     def roman_to_indic_detailed(self, text: str, language_code: str, n: int = 3):
