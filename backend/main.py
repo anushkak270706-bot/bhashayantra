@@ -28,6 +28,12 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="BhashaYantra API")
 
+
+from backend.services.rate_limit import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware, limit=30, window=60)
+
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -304,7 +310,7 @@ def transliterate(request: TransliterationRequest):
         result, ranked = transliterator.roman_to_indic_detailed(
             text=request.text,
             language_code=request.language_code,
-            n=10 
+            n=4
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

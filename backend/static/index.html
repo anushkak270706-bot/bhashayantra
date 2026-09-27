@@ -73,6 +73,19 @@
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--leaf); color: #fff;
            padding: 10px 18px; border-radius: 4px; display: none; }
   [hidden] { display: none !important; }
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+  .examples span { font-size: .9rem; color: var(--ink-soft); margin-right: 2px; }
+  .chip { font: .95rem var(--ui); background: #fff; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px; color: var(--ink); cursor: pointer; }
+  .chip:hover { border-color: var(--ink); }
+  .chip .d { font-family: var(--deva); }
+  .copy { margin-left: auto; }
+  .how { margin: 0 0 20px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; }
+  .how summary { cursor: pointer; padding: 12px 16px; font-weight: 600; }
+  .how ol { margin: 0; padding: 0 20px 16px 40px; }
+  .how li { margin: 6px 0; }
+  .how p { margin: 0 16px 14px; color: var(--ink-soft); font-size: .95rem; }
+  .wake { color: #8A6414; }
+  a { color: var(--ink); text-underline-offset: 2px; }
   @media (prefers-reduced-motion: no-preference) { .w { transition: background .15s; } }
 </style>
 </head>
@@ -83,6 +96,17 @@
     <span class="status" id="health">Connecting…</span>
   </header>
 
+  <details class="how">
+    <summary>How it works</summary>
+    <ol>
+      <li><b>Detects the script</b> of what you enter, including historical scripts like Modi.</li>
+      <li><b>Routes it</b> to the right method: a neural model for 21 modern languages, our verified character mapping for Modi.</li>
+      <li><b>Ranks ten candidate readings</b> for every word, preferring real, common words.</li>
+      <li><b>Shows its doubts.</b> Words it isn't sure about are marked; you can pick another reading, and your correction is saved.</li>
+    </ol>
+    <p>Tested on 20 languages with 300 held-out words each. Code and results: <a href="https://github.com/anushkak270706-bot/bhashayantra" target="_blank" rel="noopener">GitHub</a>.</p>
+  </details>
+
   <nav role="tablist">
     <button role="tab" aria-selected="true" data-tab="text">Type in Roman letters</button>
     <button role="tab" aria-selected="false" data-tab="modi">Modi script</button>
@@ -91,12 +115,18 @@
 
   <!-- Roman -> Indic -->
   <section class="sheet" id="tab-text">
+    <div class="examples">
+      <span>Try an example:</span>
+      <button class="chip" data-ex-text="kal subah main dilli se mumbai ki train pakdunga, lekin ticket abhi tak confirm nahi hua!" data-ex-lang="hi">Hindi</button>
+      <button class="chip" data-ex-text="aamhi udya punyala jaanar aahot, tithe shaniwarwada baghnar." data-ex-lang="mr">Marathi</button>
+    </div>
     <label for="roman">Write the way you'd type it on a phone</label>
     <textarea id="roman" placeholder="kal subah dilli se mumbai ki train pakdunga">kal subah main dilli se mumbai ki train pakdunga, lekin ticket abhi tak confirm nahi hua!</textarea>
     <div class="row" style="margin-top:12px">
       <label for="lang">Language</label>
       <select id="lang"></select>
       <button class="go" id="goText">Transliterate</button>
+      <button class="quiet copy" id="copyText" hidden>Copy result</button>
     </div>
     <div class="result" aria-live="polite">
       <div class="output" id="out"></div>
@@ -107,6 +137,12 @@
 
   <!-- Modi <-> Devanagari -->
   <section class="sheet" id="tab-modi" hidden>
+    <div class="examples">
+      <span>Try:</span>
+      <button class="chip" data-modi-ex="श्री गणेशाय नमः" data-dir="to-modi"><span class="d">श्री गणेशाय नमः</span></button>
+      <button class="chip" data-modi-ex="छत्रपती शिवाजी महाराज" data-dir="to-modi"><span class="d">छत्रपती शिवाजी महाराज</span></button>
+      <button class="chip" data-modi-ex="𑘫𑘿𑘨𑘲 𑘐𑘜𑘹𑘫𑘰𑘧 𑘡𑘦𑘾" data-dir="to-deva">A line in Modi, to Devanagari</button>
+    </div>
     <div class="pair">
       <div>
         <label for="modiIn" id="modiInLabel">Devanagari</label>
@@ -120,6 +156,7 @@
     </div>
     <div class="row" style="margin-top:12px">
       <button class="go" id="goModi">Convert</button>
+      <button class="quiet" id="copyModi" hidden>Copy result</button>
       <span class="status" id="modiStatus"></span>
     </div>
   </section>
@@ -144,7 +181,15 @@ const $ = id => document.getElementById(id);
 let last = null;                       // last /transliterate response
 let modiDir = "to-modi";
 
-async function call(path, body) {
+function wakeNotice(el) {
+  // Free hosting sleeps when idle; the first request can take up to a minute.
+  return setTimeout(() => { if (el) el.innerHTML = '<span class="wake">Waking up the server (free hosting). The first request can take up to a minute; later ones are fast.</span>'; }, 3500);
+}
+async function call(path, body, statusEl) {
+  const t = wakeNotice(statusEl);
+  try { return await call_(path, body); } finally { clearTimeout(t); }
+}
+async function call_(path, body) {
   const res = await fetch(API + path, body ? {
     method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)
   } : {});
@@ -163,7 +208,7 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
 // Startup: health + languages
 (async () => {
   try {
-    const langs = await call("/languages");
+    const langs = await call("/languages", null, $("health"));
     const sel = $("lang");
     Object.entries(langs).filter(([, v]) => v.indicxlit_code)
       .sort((a, b) => a[1].name.localeCompare(b[1].name))
@@ -178,9 +223,9 @@ $("goText").onclick = async () => {
   if (!text) { $("outStatus").textContent = "Type something first."; return; }
   $("goText").disabled = true; $("outStatus").textContent = "Working…";
   try {
-    last = await call("/transliterate", {text, language_code: $("lang").value});
+    last = await call("/transliterate", {text, language_code: $("lang").value}, $("outStatus"));
     last.roman = text;
-    renderOutput();
+    renderOutput(); $("copyText").hidden = false;
   } catch (e) { $("out").textContent = ""; $("outStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
   $("goText").disabled = false;
 };
@@ -234,7 +279,28 @@ async function choose(idx, roman, alt) {
   } catch { toast("Changed here, but the correction could not be saved"); }
 }
 
+// Examples
+document.querySelectorAll("[data-ex-text]").forEach(b => b.onclick = () => {
+  $("roman").value = b.dataset.exText; $("lang").value = b.dataset.exLang; $("goText").click();
+});
+document.querySelectorAll("[data-modi-ex]").forEach(b => b.onclick = () => {
+  setDir(b.dataset.dir); $("modiIn").value = b.dataset.modiEx; $("modiOut").value = ""; $("goModi").click();
+});
+
+// Copy buttons
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch { toast("Select the text and copy it manually"); }
+}
+$("copyText").onclick = () => copy($("out").innerText.trim());
+$("copyModi").onclick = () => copy($("modiOut").value);
+
 // Modi <-> Devanagari
+function setDir(dir) {
+  modiDir = dir;
+  $("modiInLabel").textContent = dir === "to-modi" ? "Devanagari" : "Modi";
+  $("modiOutLabel").textContent = dir === "to-modi" ? "Modi" : "Devanagari";
+}
 $("swap").onclick = () => {
   modiDir = modiDir === "to-modi" ? "to-deva" : "to-modi";
   $("modiInLabel").textContent = modiDir === "to-modi" ? "Devanagari" : "Modi";
@@ -249,8 +315,9 @@ $("goModi").onclick = async () => {
     ? {text, source_script: "devanagari", target_script: "modi"}
     : {text, target_script: "devanagari"};
   try {
-    const r = await call("/convert-script", body);
-    $("modiOut").value = r.output;
+    $("modiStatus").textContent = "Working…";
+    const r = await call("/convert-script", body, $("modiStatus"));
+    $("modiOut").value = r.output; $("copyModi").hidden = false;
     $("modiStatus").textContent = modiDir === "to-deva" ? `Detected script: ${r.source_script}` : "Converted";
   } catch (e) { $("modiStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
 };
