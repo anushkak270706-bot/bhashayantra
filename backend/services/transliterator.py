@@ -4,6 +4,8 @@ import re
 import ctranslate2
 from huggingface_hub import snapshot_download
 
+from backend.services.lexicon_ranker import rerank
+
 
 MODEL_REPO = "Singla0009/all-indic-transliteration"
 
@@ -56,17 +58,21 @@ class Transliterator:
         ]
 
     def roman_to_indic_detailed(self, text: str, language_code: str, n: int = 3):
-        """Returns (output_text, per_word list of n-best [(candidate, log_score), ...])."""
+        """Returns (output_text, per_word ranked candidates).
+
+        Each word's candidates are the model's n-best, re-ranked by real-word frequency.
+        """
         tokens = [t for t in _TOKEN.split(text) if t]
         word_idx = [i for i, t in enumerate(tokens) if re.search(r"\w", t) and not t.isspace()]
         if not word_idx:
             return text, []
 
         nbest = self._words_nbest([tokens[i] for i in word_idx], language_code, n)
+        ranked = [rerank(hyps, language_code) for hyps in nbest]
         out = list(tokens)
-        for i, hyps in zip(word_idx, nbest):
-            out[i] = hyps[0][0]
-        return "".join(out), nbest
+        for i, cands in zip(word_idx, ranked):
+            out[i] = cands[0]["text"]
+        return "".join(out), ranked
 
     def roman_to_indic(self, text: str, language_code: str) -> str:
-        return self.roman_to_indic_detailed(text, language_code, n=1)[0]
+        return self.roman_to_indic_detailed(text, language_code, n=3)[0]

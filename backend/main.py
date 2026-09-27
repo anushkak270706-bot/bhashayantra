@@ -16,6 +16,7 @@ from backend.services.confidence_evaluator import ConfidenceEvaluator
 from backend.services.candidate_ranker import CandidateRanker
 from backend.services.human_verification import HumanVerificationService
 from backend.services.correction_store import save_correction
+from backend.services.lexicon_ranker import has_lexicon
 
 logging.basicConfig(
     level=logging.INFO,
@@ -297,7 +298,7 @@ def transliterate(request: TransliterationRequest):
         )
 
     try:
-        result, nbest = transliterator.roman_to_indic_detailed(
+        result, ranked = transliterator.roman_to_indic_detailed(
             text=request.text,
             language_code=request.language_code,
             n=3
@@ -305,15 +306,28 @@ def transliterate(request: TransliterationRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
+    lexicon = has_lexicon(request.language_code)
+    words = []
+    for cands in ranked:
+        best = cands[0]
+        # Only meaningful where a word list exists: flag words where
+        # no candidate is a known real word.
+        needs_review = lexicon and not any(c["known"] for c in cands)
+        words.append({
+            "best": best["text"],
+            "alternatives": [c["text"] for c in cands[1:]],
+            "known_word": best["known"],
+            "needs_review": needs_review,
+        })
+
     return {
         "input": request.text,
         "language": LANGUAGES[request.language_code]["name"],
         "language_code": request.language_code,
         "output": result,
-        "words": [
-            {"best": hyps[0][0], "alternatives": [h[0] for h in hyps[1:]]}
-            for hyps in nbest
-        ]
+        "lexicon_reranking": lexicon,
+        "flagged_words": sum(w["needs_review"] for w in words),
+        "words": words
     }
 
 
