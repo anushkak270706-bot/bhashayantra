@@ -301,7 +301,7 @@ def transliterate(request: TransliterationRequest):
         result, ranked = transliterator.roman_to_indic_detailed(
             text=request.text,
             language_code=request.language_code,
-            n=3
+            n=10 
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -315,7 +315,7 @@ def transliterate(request: TransliterationRequest):
         needs_review = lexicon and not any(c["known"] for c in cands)
         words.append({
             "best": best["text"],
-            "alternatives": [c["text"] for c in cands[1:]],
+            "alternatives": [c["text"] for c in cands[1:4]],
             "known_word": best["known"],
             "needs_review": needs_review,
         })
