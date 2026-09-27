@@ -296,16 +296,24 @@ def transliterate(request: TransliterationRequest):
             detail=f"Unsupported language code: {request.language_code}"
         )
 
-    result = transliterator.roman_to_indic(
-        text=request.text,
-        language_code=request.language_code
-    )
+    try:
+        result, nbest = transliterator.roman_to_indic_detailed(
+            text=request.text,
+            language_code=request.language_code,
+            n=3
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     return {
         "input": request.text,
         "language": LANGUAGES[request.language_code]["name"],
         "language_code": request.language_code,
-        "output": result
+        "output": result,
+        "words": [
+            {"best": hyps[0][0], "alternatives": [h[0] for h in hyps[1:]]}
+            for hyps in nbest
+        ]
     }
 
 

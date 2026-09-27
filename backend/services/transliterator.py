@@ -12,6 +12,18 @@ MODEL_REPO = "Singla0009/all-indic-transliteration"
 # and put the spaces/punctuation back exactly where they were.
 _TOKEN = re.compile(r"(\s+|[^\w\s]+)")
 
+# Exact language tags in the model's vocabulary (checked from source_vocabulary.json)
+MODEL_TAGS = {"as", "bn", "brx", "gom", "gu", "hi", "kn", "ks", "mai", "ml", "mni",
+              "mr", "ne", "or", "pa", "sa", "sd", "si", "ta", "te", "ur"}
+CODE_TO_TAG = {"kok": "gom"}  # our code -> model's tag
+
+
+def model_tag(language_code: str) -> str:
+    tag = CODE_TO_TAG.get(language_code, language_code)
+    if tag not in MODEL_TAGS:
+        raise ValueError(f"The transliteration model has no support for '{language_code}'")
+    return tag
+
 
 class Transliterator:
     def __init__(self):
@@ -31,7 +43,7 @@ class Transliterator:
         )
 
     def _words_nbest(self, words: list, language_code: str, n: int):
-        batch = [[f"__{language_code}__"] + list(w) for w in words]
+        batch = [[f"__{model_tag(language_code)}__"] + list(w) for w in words]
         results = self.engine.translate_batch(
             batch,
             beam_size=max(4, n),

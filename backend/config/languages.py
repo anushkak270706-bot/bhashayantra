@@ -21,7 +21,7 @@ LANGUAGES = {
     },
     "doi": {
         "name": "Dogri",
-        "indicxlit_code": "doi",
+        "indicxlit_code": None,
         "script": "Devanagari",
     },
     "gu": {
