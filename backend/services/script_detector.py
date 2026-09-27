@@ -12,6 +12,13 @@ class ScriptDetector:
         "malayalam": (0x0D00, 0x0D7F),
         "sinhala": (0x0D80, 0x0DFF),
         "arabic": (0x0600, 0x06FF),
+        # Heritage scripts (Unicode supplementary blocks)
+        "brahmi": (0x11000, 0x1107F),
+        "kaithi": (0x11080, 0x110CF),
+        "sharada": (0x11180, 0x111DF),
+        "grantha": (0x11300, 0x1137F),
+        "modi": (0x11600, 0x1165F),
+        "nandinagari": (0x119A0, 0x119FF),
     }
 
     def detect(self, text: str):

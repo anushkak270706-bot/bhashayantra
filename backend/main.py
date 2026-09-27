@@ -15,6 +15,7 @@ from backend.services.script_detector import ScriptDetector
 from backend.services.confidence_evaluator import ConfidenceEvaluator
 from backend.services.candidate_ranker import CandidateRanker
 from backend.services.human_verification import HumanVerificationService
+from backend.services.correction_store import save_correction
 
 logging.basicConfig(
     level=logging.INFO,
@@ -98,6 +99,16 @@ class ScriptConversionRequest(BaseModel):
     source_script: Optional[str] = None
     target_script: str
 
+
+class CorrectionRequest(BaseModel):
+    source_text: str
+    source_script: str
+    model_output: str
+    corrected_output: str
+    engine: str
+    document_id: Optional[str] = None
+
+
 @app.get("/")
 def home():
     return {
@@ -108,6 +119,11 @@ def home():
 @app.get("/languages")
 def get_languages():
     return LANGUAGES
+
+
+@app.get("/scripts")
+def get_scripts():
+    return {"script_bridge": script_bridge.supported_scripts()}
 
 
 @app.post("/detect-language")
@@ -144,50 +160,54 @@ def convert_script(request: ScriptConversionRequest):
             detail="Could not detect the source script."
         )
 
-    result = router.route(
-        input_type="script"
-    ).convert(
-        text=request.text,
-        source_script=source_script,
-        target_script=request.target_script
-    )
+    # FIX: unsupported scripts used to crash with a 500; now a clear 400
+    try:
+        result = router.route(
+            input_type="script"
+        ).convert(
+            text=request.text,
+            source_script=source_script,
+            target_script=request.target_script
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     confidence = confidence_evaluator.evaluate(
-    detector_confidence if detector_confidence is not None else 1.0
+        detector_confidence if detector_confidence is not None else 1.0
     )
 
     candidates = candidate_ranker.rank([
-    {
-        "text": result,
-        "score": confidence["score"]
-    }
-])
+        {
+            "text": result,
+            "score": confidence["score"]
+        }
+    ])
 
     review = human_verification.create_review(
-    confidence=confidence,
-    candidates=candidates
-)
+        confidence=confidence,
+        candidates=candidates
+    )
 
     return {
-    "input": request.text,
-    "source_script": source_script,
-    "target_script": request.target_script,
-    "detector_confidence": detector_confidence,
-    "confidence": confidence,
-    "candidates": candidates,
-    "review": review,
-    "status": "success",
-    "output": result
-}
+        "input": request.text,
+        "source_script": source_script,
+        "target_script": request.target_script,
+        "detector_confidence": detector_confidence,
+        "confidence": confidence,
+        "candidates": candidates,
+        "review": review,
+        "status": "success",
+        "output": result
+    }
 
 
 @app.post("/auto-transliterate")
 def auto_transliterate(request: AutoTransliterationRequest):
 
     logger.info(
-    "Auto-transliteration request received: %s",
-    request.text
-)
+        "Auto-transliteration request received: %s",
+        request.text
+    )
 
     if not request.text.strip():
         raise HTTPException(
@@ -245,8 +265,9 @@ def auto_transliterate(request: AutoTransliterationRequest):
             detail=f"No transliteration model is configured for '{internal_code}'"
         )
 
-    # Transliterate using the selected or detected language
-        engine = router.route(
+    # FIX: these lines were indented inside the `if model_code is None:` block,
+    # after the `raise`, so they never ran and `engine` was undefined below.
+    engine = router.route(
         input_type="text",
         language_code=internal_code
     )
@@ -286,3 +307,10 @@ def transliterate(request: TransliterationRequest):
         "language_code": request.language_code,
         "output": result
     }
+
+
+@app.post("/corrections")
+def corrections(request: CorrectionRequest):
+    """Expert corrections become labelled training data."""
+    total = save_correction(request.model_dump())
+    return {"saved": True, "total_corrections": total}
