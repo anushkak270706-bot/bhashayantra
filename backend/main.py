@@ -110,11 +110,10 @@ class CorrectionRequest(BaseModel):
     document_id: Optional[str] = None
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def home():
-    return {
-        "message": "BhashaYantra backend is running!"
-    }
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse("/app")
 
 
 @app.get("/languages")
@@ -136,8 +135,10 @@ def detect_language(request: LanguageDetectionRequest):
             detail="Text cannot be empty"
         )
 
-    predictions = language_detector.detect(request.text)
-
+    try:
+        predictions = language_detector.detect(request.text)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
     return {
         "input": request.text,
         "predictions": predictions
@@ -232,8 +233,10 @@ def auto_transliterate(request: AutoTransliterationRequest):
     # Otherwise, detect the language automatically
     else:
 
-        predictions = language_detector.detect(request.text)
-
+        try:
+            predictions = language_detector.detect(request.text)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
         best_prediction = predictions[0]
         detector_confidence = best_prediction["confidence"]
 
@@ -336,3 +339,12 @@ def corrections(request: CorrectionRequest):
     """Expert corrections become labelled training data."""
     total = save_correction(request.model_dump())
     return {"saved": True, "total_corrections": total}
+
+# ---- Web app (single page, served by this same server) ----
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+
+@app.get("/app", include_in_schema=False)
+def web_app():
+    return FileResponse(Path(__file__).resolve().parent / "static" / "index.html")

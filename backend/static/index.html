@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BhashaYantra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Tiro+Devanagari+Marathi&family=Noto+Sans+Modi&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EDEFE8;      /* cool archival paper */
+    --sheet: #F8F9F5;      /* working surface */
+    --ink: #1D2847;        /* indigo ink */
+    --ink-soft: #5A6480;
+    --rule: #CDD2C6;
+    --haldi: #E3A008;      /* turmeric: "check this word" */
+    --haldi-wash: #FBEFC8;
+    --leaf: #2F6B57;       /* confirmation */
+    --ui: "Hind", "Segoe UI", system-ui, sans-serif;
+    --deva: "Tiro Devanagari Marathi", "Noto Serif Devanagari", "Nirmala UI", serif;
+    --modi: "Noto Sans Modi", "Tiro Devanagari Marathi", serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.55 var(--ui); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  .brand { font: 2rem/1 var(--deva); margin: 0; }
+  .brand span { font: 500 1rem var(--ui); color: var(--ink-soft); margin-left: 10px; }
+
+  nav { display: flex; gap: 4px; border-bottom: 2px solid var(--rule); margin-bottom: 24px; }
+  nav button { font: 500 1rem var(--ui); color: var(--ink-soft); background: none; border: 0; padding: 10px 14px;
+               border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; }
+  nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+  .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 24px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  label { font-weight: 500; font-size: .95rem; }
+  textarea, select { font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px; }
+  textarea { width: 100%; min-height: 96px; resize: vertical; }
+  select { padding: 8px 10px; }
+  :focus-visible { outline: 3px solid var(--haldi); outline-offset: 2px; }
+
+  .go { font: 600 1rem var(--ui); background: var(--ink); color: #fff; border: 0; border-radius: 4px; padding: 10px 20px; cursor: pointer; }
+  .go:disabled { opacity: .5; cursor: wait; }
+  .quiet { font: 500 .95rem var(--ui); background: none; border: 1px solid var(--rule); color: var(--ink); border-radius: 4px; padding: 8px 12px; cursor: pointer; }
+
+  .result { margin-top: 24px; min-height: 3.5em; }
+  .output { font: 2.1rem/1.9 var(--deva); word-spacing: .08em; }
+  .w { cursor: pointer; border-radius: 3px; padding: 0 2px; border-bottom: 2px solid transparent; }
+  .w:hover { background: #E4E8F2; }
+  .w.flag { background: var(--haldi-wash); border-bottom: 2px solid var(--haldi); }
+  .w.fixed { border-bottom: 2px solid var(--leaf); }
+  .status { color: var(--ink-soft); font-size: .95rem; margin-top: 8px; }
+  .status b { color: var(--ink); }
+  .error { color: #9B1C1C; }
+
+  .pick { position: absolute; background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 6px;
+          box-shadow: 0 6px 24px rgba(29,40,71,.14); display: none; z-index: 10; min-width: 150px; }
+  .pick p { margin: 4px 8px 6px; font-size: .85rem; color: var(--ink-soft); }
+  .pick button { display: block; width: 100%; text-align: left; font: 1.4rem var(--deva); background: none; border: 0; padding: 4px 10px; border-radius: 4px; color: var(--ink); cursor: pointer; }
+  .pick button:hover, .pick button:focus-visible { background: #E4E8F2; }
+
+  .pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
+  .pair textarea { min-height: 150px; font: 1.5rem/1.7 var(--modi); }
+  .swap { align-self: center; }
+  @media (max-width: 640px) { .pair { grid-template-columns: 1fr; } .swap { justify-self: start; } }
+
+  .drop { border: 2px dashed var(--rule); border-radius: 6px; padding: 48px 20px; text-align: center; color: var(--ink-soft); }
+  .drop h2 { font: 1.8rem var(--modi); color: var(--ink); margin: 0 0 8px; }
+  footer { margin-top: 28px; font-size: .9rem; color: var(--ink-soft); }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--leaf); color: #fff;
+           padding: 10px 18px; border-radius: 4px; display: none; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: no-preference) { .w { transition: background .15s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="brand">भाषायंत्र <span>BhashaYantra</span></h1>
+    <span class="status" id="health">Connecting…</span>
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="text">Type in Roman letters</button>
+    <button role="tab" aria-selected="false" data-tab="modi">Modi script</button>
+    <button role="tab" aria-selected="false" data-tab="scan">Manuscript scan</button>
+  </nav>
+
+  <!-- Roman -> Indic -->
+  <section class="sheet" id="tab-text">
+    <label for="roman">Write the way you'd type it on a phone</label>
+    <textarea id="roman" placeholder="kal subah dilli se mumbai ki train pakdunga">kal subah main dilli se mumbai ki train pakdunga, lekin ticket abhi tak confirm nahi hua!</textarea>
+    <div class="row" style="margin-top:12px">
+      <label for="lang">Language</label>
+      <select id="lang"></select>
+      <button class="go" id="goText">Transliterate</button>
+    </div>
+    <div class="result" aria-live="polite">
+      <div class="output" id="out"></div>
+      <div class="status" id="outStatus"></div>
+    </div>
+    <footer>Yellow words are ones the system isn't sure about. Click any word to see other readings and pick the right one; your choice is saved to improve future results.</footer>
+  </section>
+
+  <!-- Modi <-> Devanagari -->
+  <section class="sheet" id="tab-modi" hidden>
+    <div class="pair">
+      <div>
+        <label for="modiIn" id="modiInLabel">Devanagari</label>
+        <textarea id="modiIn">श्री गणेशाय नमः । छत्रपती शिवाजी महाराज</textarea>
+      </div>
+      <button class="quiet swap" id="swap" aria-label="Swap direction">⇄</button>
+      <div>
+        <label for="modiOut" id="modiOutLabel">Modi</label>
+        <textarea id="modiOut" readonly></textarea>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="go" id="goModi">Convert</button>
+      <span class="status" id="modiStatus"></span>
+    </div>
+  </section>
+
+  <!-- Manuscript placeholder -->
+  <section class="sheet" id="tab-scan" hidden>
+    <div class="drop">
+      <h2>𑘦𑘻𑘚𑘲</h2>
+      <p><b>Handwritten Modi manuscripts are next.</b><br>
+      Upload a scanned page and get a Devanagari reading, with uncertain words marked for an expert to check.</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="pick" id="pick" role="menu"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const API = "";                       // same server as this page
+const $ = id => document.getElementById(id);
+let last = null;                       // last /transliterate response
+let modiDir = "to-modi";
+
+async function call(path, body) {
+  const res = await fetch(API + path, body ? {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)
+  } : {});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "The server rejected the request (" + res.status + ").");
+  return data;
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; setTimeout(() => t.style.display = "none", 2200); }
+
+// Tabs
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  ["text", "modi", "scan"].forEach(t => $("tab-" + t).hidden = t !== b.dataset.tab);
+});
+
+// Startup: health + languages
+(async () => {
+  try {
+    const langs = await call("/languages");
+    const sel = $("lang");
+    Object.entries(langs).filter(([, v]) => v.indicxlit_code)
+      .sort((a, b) => a[1].name.localeCompare(b[1].name))
+      .forEach(([code, v]) => sel.add(new Option(v.name, code, false, code === "hi")));
+    $("health").textContent = "Ready";
+  } catch { $("health").innerHTML = '<span class="error">Backend not running. Start it with: uvicorn backend.main:app --reload</span>'; }
+})();
+
+// Roman -> Indic
+$("goText").onclick = async () => {
+  const text = $("roman").value.trim();
+  if (!text) { $("outStatus").textContent = "Type something first."; return; }
+  $("goText").disabled = true; $("outStatus").textContent = "Working…";
+  try {
+    last = await call("/transliterate", {text, language_code: $("lang").value});
+    last.roman = text;
+    renderOutput();
+  } catch (e) { $("out").textContent = ""; $("outStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
+  $("goText").disabled = false;
+};
+
+function renderOutput() {
+  // Rebuild from the roman input so punctuation and spacing stay exactly as typed.
+  const tokens = last.roman.split(/(\s+|[^\w\s]+)/).filter(Boolean);
+  const out = $("out"); out.innerHTML = "";
+  let k = 0;
+  tokens.forEach(tok => {
+    if (/\w/.test(tok) && !/^\s+$/.test(tok) && last.words[k]) {
+      const w = last.words[k], idx = k++;
+      const span = document.createElement("span");
+      span.className = "w" + (w.needs_review ? " flag" : "") + (w.fixed ? " fixed" : "");
+      span.textContent = w.best; span.tabIndex = 0;
+      span.dataset.roman = tok; span.dataset.idx = idx;
+      span.onclick = e => openPick(span, idx, tok);
+      span.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPick(span, idx, tok); } };
+      out.appendChild(span);
+    } else out.appendChild(document.createTextNode(tok));
+  });
+  const flagged = last.words.filter(w => w.needs_review && !w.fixed).length;
+  $("outStatus").innerHTML = flagged
+    ? `<b>${flagged} word${flagged > 1 ? "s" : ""}</b> marked for checking. Click a word to see other readings.`
+    : "No words flagged. Click any word to see other readings.";
+}
+
+function openPick(span, idx, roman) {
+  const w = last.words[idx], pick = $("pick");
+  pick.innerHTML = `<p>Other readings of “${roman}”</p>`;
+  [...w.alternatives].forEach(alt => {
+    const b = document.createElement("button"); b.textContent = alt; b.setAttribute("role", "menuitem");
+    b.onclick = () => choose(idx, roman, alt); pick.appendChild(b);
+  });
+  const r = span.getBoundingClientRect();
+  pick.style.left = (r.left + window.scrollX) + "px"; pick.style.top = (r.bottom + window.scrollY + 6) + "px";
+  pick.style.display = "block"; pick.querySelector("button")?.focus();
+}
+document.addEventListener("click", e => { if (!e.target.closest(".pick, .w")) $("pick").style.display = "none"; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("pick").style.display = "none"; });
+
+async function choose(idx, roman, alt) {
+  const w = last.words[idx], before = w.best;
+  w.alternatives = [before, ...w.alternatives.filter(a => a !== alt)];
+  w.best = alt; w.fixed = true; w.needs_review = false;
+  $("pick").style.display = "none"; renderOutput();
+  try {
+    await call("/corrections", {source_text: roman, source_script: "latin", model_output: before,
+                                corrected_output: alt, engine: "indicxlit"});
+    toast("Correction saved");
+  } catch { toast("Changed here, but the correction could not be saved"); }
+}
+
+// Modi <-> Devanagari
+$("swap").onclick = () => {
+  modiDir = modiDir === "to-modi" ? "to-deva" : "to-modi";
+  $("modiInLabel").textContent = modiDir === "to-modi" ? "Devanagari" : "Modi";
+  $("modiOutLabel").textContent = modiDir === "to-modi" ? "Modi" : "Devanagari";
+  if ($("modiOut").value) { $("modiIn").value = $("modiOut").value; $("modiOut").value = ""; }
+  $("modiStatus").textContent = "";
+};
+$("goModi").onclick = async () => {
+  const text = $("modiIn").value.trim();
+  if (!text) { $("modiStatus").textContent = "Enter some text first."; return; }
+  const body = modiDir === "to-modi"
+    ? {text, source_script: "devanagari", target_script: "modi"}
+    : {text, target_script: "devanagari"};
+  try {
+    const r = await call("/convert-script", body);
+    $("modiOut").value = r.output;
+    $("modiStatus").textContent = modiDir === "to-deva" ? `Detected script: ${r.source_script}` : "Converted";
+  } catch (e) { $("modiStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
+};
+</script>
+</body>
+</html>
