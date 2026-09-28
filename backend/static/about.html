@@ -79,7 +79,7 @@
   <div class="reveal">
     <span class="kicker">Typed text, 20 languages</span>
     <h2 class="h2">The right word is usually already a candidate.</h2>
-    <p class="muted" style="margin-top:16px">300 test words per language from AI4Bharat's Aksharantar. The test words share 0.0% overlap with training words, so every number is on words the system had never seen. Exact match is strict: a valid alternative spelling counts as wrong.</p>
+    <p class="muted" style="margin-top:16px">300 test words per language from AI4Bharat's Aksharantar, measured exactly as the live app runs. The test words share 0.0% overlap with training words, so every number is on words the system had never seen. Exact match is strict: a valid alternative spelling counts as wrong.</p>
     <p class="muted">The gap between the two bars is what better ranking can win, and what we work on.</p>
   </div>
   <div>
@@ -101,12 +101,13 @@
 
 <section class="section">
   <span class="kicker">What testing taught us</span>
-  <h2 class="h2 reveal">Four findings we only got by measuring.</h2>
+  <h2 class="h2 reveal">Five findings we only got by measuring.</h2>
   <ol class="finds">
     <li class="reveal"><b>01</b><div><h3>A library corrupts श्री</h3><p>A standard transliteration library turns र + ी into ॠ in Modi, breaking श्री and क्षत्रिय. We built our own mapping, which round-trips exactly.</p></div></li>
     <li class="reveal"><b>02</b><div><h3>Bengali and Assamese were swapped</h3><p>The public model conversion we use had the two language tags swapped. Fixing it lifted Bengali from 9% to 61% and Assamese from 18% to 53%.</p></div></li>
     <li class="reveal"><b>03</b><div><h3>Cleaning scans made them worse</h3><p>Denoising and binarising pages raised the error rate from 0.31 to 0.33, since the model learned from raw scans. It did rescue one page where the model looped.</p></div></li>
-    <li class="reveal"><b>04</b><div><h3>Flags work best where they're calibrated</h3><p>The review threshold was chosen on validation data and confirmed on test data: flagged typed words are wrong 68.5% of the time, and flags catch 42% of mistakes.</p></div></li>
+    <li class="reveal"><b>04</b><div><h3>Search wider only where unsure</h3><p>Four candidates per word keeps the app fast; unsure words get a second search over ten. Same speed for most words, and Bengali rose from 53% (raw model) to 66%.</p></div></li>
+    <li class="reveal"><b>05</b><div><h3>Flags work best where they're calibrated</h3><p>The review threshold was chosen on validation data and confirmed on test data: flagged typed words are wrong 68% of the time, and flags catch 39% of mistakes while marking about a quarter of words.</p></div></li>
   </ol>
 </section>
 
@@ -137,10 +138,11 @@
 </footer>
 
 <script>
-const LANGS = [["Kannada",71.3,93.7],["Nepali",68.7,93.7],["Telugu",71.0,93.3],["Maithili",61.3,92.7],["Gujarati",55.0,89.7],
-  ["Assamese",52.7,88.7],["Marathi",61.0,88.0],["Manipuri",63.3,88.0],["Tamil",67.7,88.0],["Malayalam",62.7,86.7],
-  ["Bengali",60.7,86.7],["Sanskrit",55.7,83.7],["Sindhi",48.7,83.7],["Hindi",44.7,83.0],["Bodo",51.7,80.3],
-  ["Punjabi",47.0,80.3],["Konkani",47.0,79.0],["Urdu",41.7,75.7],["Odia",41.0,73.0],["Kashmiri",25.7,58.3]];
+// Live-app mode: 4 candidates, wider search for unsure words (python -m eval.evaluate --all --n 300 --app)
+const LANGS = [["Kannada",71.0,93.7],["Nepali",68.0,93.7],["Telugu",70.7,93.3],["Maithili",60.0,92.7],["Gujarati",55.0,89.7],
+  ["Assamese",53.3,88.7],["Marathi",60.7,88.0],["Manipuri",63.7,88.0],["Tamil",70.3,88.0],["Malayalam",63.0,86.7],
+  ["Bengali",66.0,86.7],["Sanskrit",55.3,83.7],["Sindhi",49.0,83.7],["Hindi",44.3,83.0],["Bodo",51.7,80.3],
+  ["Punjabi",46.7,80.3],["Konkani",47.7,79.0],["Urdu",43.7,75.7],["Odia",41.3,73.0],["Kashmiri",25.7,58.3]];
 const bars = document.getElementById("bars");
 bars.innerHTML = LANGS.map(([n, t1, t10]) =>
   `<div class="bar"><span>${n}</span><span class="track" role="img" aria-label="${n}: ${t1}% first answer, ${t10}% in top 10">

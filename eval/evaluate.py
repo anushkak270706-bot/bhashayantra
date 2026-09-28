@@ -84,7 +84,10 @@ def flag_stats(items, threshold):
             "catch_rate_%": pct(fw, n_wrong), "unflagged_accuracy_%": pct(unflagged_right, n_unflag)}
 
 
-def evaluate(xlit, lang, n, seed, split="test", local_file=None):
+APP_N = 4  # candidates the live app requests (unsure words get a wider search)
+
+
+def evaluate(xlit, lang, n, seed, split="test", local_file=None, app_mode=False):
     pairs = load_pairs(lang, split, local_file)
     random.Random(seed).shuffle(pairs)
     pairs = pairs[:n]
@@ -94,8 +97,10 @@ def evaluate(xlit, lang, n, seed, split="test", local_file=None):
     for start in range(0, len(pairs), 64):
         batch = pairs[start:start + 64]
         nbest = xlit._words_nbest([r for r, _ in batch], lang, 10)
-        for (roman, gold), hyps in zip(batch, nbest):
-            ranked = rerank(hyps, lang)
+        if app_mode:  # exactly what the website does: 4 candidates, wider search when unsure
+            _, app_ranked = xlit.roman_to_indic_detailed(" ".join(r for r, _ in batch), lang, n=APP_N)
+        for j, ((roman, gold), hyps) in enumerate(zip(batch, nbest)):
+            ranked = app_ranked[j] if app_mode else rerank(hyps, lang)
             pred = ranked[0]["text"]
             right = pred == gold
             stats["model_top1"] += hyps[0][0] == gold
@@ -108,7 +113,7 @@ def evaluate(xlit, lang, n, seed, split="test", local_file=None):
                                needs_review(ranked, lang)])
     total = len(pairs)
     pct = lambda a: round(100 * a / total, 1) if total else None
-    summary = {"language": lang, "split": split, "words": total,
+    summary = {"language": lang, "split": split, "mode": "app" if app_mode else "fixed-10", "words": total,
                "lexicon_reranking": has_lexicon(lang),
                "model_top1_%": pct(stats["model_top1"]), "ranked_top1_%": pct(stats["ranked_top1"]),
                "top10_%": pct(stats["top10"]),
@@ -131,6 +136,7 @@ def main():
     ap.add_argument("--split", default="test", choices=["test", "valid"])
     ap.add_argument("--sweep", action="store_true", help="report flag metrics at several flag budgets")
     ap.add_argument("--file", help="local zip/json instead of downloading")
+    ap.add_argument("--app", action="store_true", help="evaluate exactly as the live app runs (4 candidates + wider search)")
     args = ap.parse_args()
 
     langs = [l for l in FILE_CODE if CODE_TO_TAG.get(l, l) in MODEL_TAGS] if args.all else [args.lang]
@@ -138,7 +144,7 @@ def main():
     summaries, all_items = [], []
     for lang in langs:
         try:
-            s, items = evaluate(xlit, lang, args.n, args.seed, args.split, args.file)
+            s, items = evaluate(xlit, lang, args.n, args.seed, args.split, args.file, args.app)
             all_items += items
         except Exception as exc:
             s = {"language": lang, "error": str(exc)[:120]}
@@ -146,11 +152,11 @@ def main():
         print(json.dumps({k: v for k, v in s.items() if k != "sweep"}, ensure_ascii=False))
 
     RESULTS.mkdir(exist_ok=True)
-    (RESULTS / f"summary_{args.split}.json").write_text(
+    (RESULTS / f"summary_{args.split}{'_app' if args.app else ''}.json").write_text(
         json.dumps(summaries, ensure_ascii=False, indent=2), encoding="utf-8")
     keys = ["language", "words", "model_top1_%", "ranked_top1_%", "top10_%", "CER_%",
             "flagged_%", "flag_precision_%", "catch_rate_%", "unflagged_accuracy_%"]
-    print(f"\n[{args.split} split, flag threshold {CONF_THRESHOLD}]")
+    print(f"\n[{args.split} split, {'APP mode (4 + wider search)' if args.app else 'fixed 10 candidates'}, flag threshold {CONF_THRESHOLD}]")
     print(" | ".join(keys))
     for s in summaries:
         print(" | ".join(str(s.get(k, "-")) for k in keys))
