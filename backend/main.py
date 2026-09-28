@@ -366,3 +366,7 @@ from fastapi.responses import FileResponse
 @app.get("/app", include_in_schema=False)
 def web_app():
     return FileResponse(Path(__file__).resolve().parent / "static" / "index.html")
+
+# Static files (manuscript gallery images and data)
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")

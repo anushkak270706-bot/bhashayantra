@@ -86,6 +86,28 @@
   .how p { margin: 0 16px 14px; color: var(--ink-soft); font-size: .95rem; }
   .wake { color: #8A6414; }
   a { color: var(--ink); text-underline-offset: 2px; }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
+  .tool { font: 500 .95rem var(--ui); background: #fff; border: 1px solid var(--rule); border-radius: 4px; padding: 6px 12px; color: var(--ink); cursor: pointer; }
+  .tool:hover { border-color: var(--ink); }
+  .tool.live { background: var(--haldi-wash); border-color: var(--haldi); }
+  .tool input { display: none; }
+  .note { font-size: .88rem; color: var(--ink-soft); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; }
+  .stat { background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; }
+  .stat b { display: block; font: 1.7rem var(--deva); color: var(--ink); }
+  .stat span { font-size: .9rem; color: var(--ink-soft); }
+  @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } }
+  .thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; margin: 16px 0 12px; }
+  .thumb { flex: 0 0 auto; background: #fff; border: 2px solid var(--rule); border-radius: 6px; padding: 4px; cursor: pointer; text-align: left; font: .8rem var(--ui); color: var(--ink-soft); }
+  .thumb img { display: block; width: 120px; height: 60px; object-fit: cover; border-radius: 3px; margin-bottom: 4px; }
+  .thumb[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
+  .ms-img { width: 100%; border: 1px solid var(--rule); border-radius: 4px; background: #fff; }
+  .ms-read { font: 1.45rem/1.9 var(--deva); margin: 8px 0; }
+  .ms-read .w { cursor: default; }
+  .w.miss { text-decoration: underline wavy #B42318; text-decoration-thickness: 1.5px; text-underline-offset: 6px; }
+  .gold { font: 1.25rem/1.8 var(--deva); background: #fff; border: 1px dashed var(--rule); border-radius: 4px; padding: 8px 12px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .88rem; color: var(--ink-soft); margin: 6px 0 12px; }
+  .sw { display: inline-block; width: 22px; height: 12px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
   @media (prefers-reduced-motion: no-preference) { .w { transition: background .15s; } }
 </style>
 </head>
@@ -101,7 +123,7 @@
     <ol>
       <li><b>Detects the script</b> of what you enter, including historical scripts like Modi.</li>
       <li><b>Routes it</b> to the right method: a neural model for 21 modern languages, our verified character mapping for Modi.</li>
-      <li><b>Ranks the tops candidate readings</b> for every word, preferring real, common words.</li>
+      <li><b>Ranks the top candidate readings</b> for every word, preferring real, common words.</li>
       <li><b>Shows its doubts.</b> Words it isn't sure about are marked; you can pick another reading, and your correction is saved.</li>
     </ol>
     <p>Tested on 20 languages with 300 held-out words each. Code and results: <a href="https://github.com/anushkak270706-bot/bhashayantra" target="_blank" rel="noopener">GitHub</a>.</p>
@@ -119,6 +141,11 @@
       <span>Try an example:</span>
       <button class="chip" data-ex-text="kal subah main dilli se mumbai ki train pakdunga, lekin ticket abhi tak confirm nahi hua!" data-ex-lang="hi">Hindi</button>
       <button class="chip" data-ex-text="aamhi udya punyala jaanar aahot, tithe shaniwarwada baghnar." data-ex-lang="mr">Marathi</button>
+    </div>
+    <div class="tools">
+      <label class="tool" title="Reads printed English-letter text from a photo, in your browser">📷 Read text from a photo
+        <input type="file" accept="image/*" id="ocrRoman"></label>
+      <span class="note" id="ocrRomanStatus"></span>
     </div>
     <label for="roman">Write the way you'd type it on a phone</label>
     <textarea id="roman" placeholder="kal subah dilli se mumbai ki train pakdunga">kal subah main dilli se mumbai ki train pakdunga, lekin ticket abhi tak confirm nahi hua!</textarea>
@@ -143,6 +170,13 @@
       <button class="chip" data-modi-ex="छत्रपती शिवाजी महाराज" data-dir="to-modi"><span class="d">छत्रपती शिवाजी महाराज</span></button>
       <button class="chip" data-modi-ex="𑘫𑘿𑘨𑘲 𑘐𑘜𑘹𑘫𑘰𑘧 𑘡𑘦𑘾" data-dir="to-deva">A line in Modi, to Devanagari</button>
     </div>
+    <div class="tools">
+      <button class="tool" id="mic" title="Speak; your browser's speech service writes it in Devanagari">🎤 Speak</button>
+      <select id="micLang" aria-label="Speech language"><option value="mr-IN">Marathi</option><option value="hi-IN">Hindi</option></select>
+      <label class="tool" title="Reads printed Devanagari from a photo, in your browser">📷 Devanagari from a photo
+        <input type="file" accept="image/*" id="ocrDeva"></label>
+      <span class="note" id="toolStatus"></span>
+    </div>
     <div class="pair">
       <div>
         <label for="modiIn" id="modiInLabel">Devanagari</label>
@@ -163,10 +197,26 @@
 
   <!-- Manuscript placeholder -->
   <section class="sheet" id="tab-scan" hidden>
-    <div class="drop">
-      <h2>𑘦𑘻𑘚𑘲</h2>
-      <p><b>Handwritten Modi manuscripts are next.</b><br>
-      Upload a scanned page and get a Devanagari reading, with uncertain words marked for an expert to check.</p>
+    <div class="stats">
+      <div class="stat"><b>0.31</b><span>character error rate on 60 unseen pages: about 3 in 10 characters need fixing</span></div>
+      <div class="stat"><b>80%</b><span>of pages are a usable first draft (error rate 0.40 or less)</span></div>
+      <div class="stat"><b>89%</b><span>of words marked yellow are really wrong, versus 64% of all words: check these first</span></div>
+    </div>
+    <p class="note">Measured on held-out pages from the MoDeTrans test list, never used in training. We also tried cleaning the scans (denoise, binarise, deskew): it made readings slightly worse (0.33), so we use the raw scan.</p>
+
+    <div class="thumbs" id="msThumbs" role="group" aria-label="Manuscript pages"></div>
+    <img class="ms-img" id="msImg" alt="Selected Modi manuscript page">
+    <div class="legend">
+      <span><i class="sw" style="background:var(--haldi-wash);border-bottom:2px solid var(--haldi)"></i>Model unsure: check first</span>
+      <span id="missKey" hidden><span style="text-decoration:underline wavy #B42318;text-underline-offset:4px;margin-right:6px">word</span>Differs from the expert</span>
+    </div>
+    <label for="msPred" class="note">Machine reading (Devanagari)</label>
+    <div class="ms-read" id="msPred"></div>
+    <label class="note"><input type="checkbox" id="msCompare"> Compare with the expert's transliteration</label>
+    <div class="gold" id="msGold" hidden></div>
+    <p class="note" id="msCredit" style="margin-top:14px"></p>
+    <div class="drop" style="padding:20px;margin-top:8px">
+      <p><b>Upload your own page:</b> coming with GPU hosting. These readings were generated on a GPU; our free server can't run the vision model yet.</p>
     </div>
   </section>
 
@@ -322,6 +372,111 @@ $("goModi").onclick = async () => {
     $("modiStatus").textContent = modiDir === "to-deva" ? `Detected script: ${r.source_script}` : "Converted";
   } catch (e) { $("modiStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
 };
+
+// ---------- Manuscripts gallery ----------
+let MS = null, msIdx = 0;
+const tier = c => c < 0.10 ? "Excellent" : c < 0.20 ? "Good" : c <= 0.40 ? "Usable draft" : "Hard page";
+async function loadManuscripts() {
+  if (MS) return;
+  try {
+    MS = await (await fetch("/static/manuscripts/manuscripts.json")).json();
+  } catch { $("msCredit").textContent = "Could not load the manuscript examples."; return; }
+  $("msThumbs").innerHTML = "";
+  MS.gallery.forEach((g, i) => {
+    const b = document.createElement("button");
+    b.className = "thumb"; b.setAttribute("aria-pressed", i === 0);
+    b.innerHTML = `<img src="/static/manuscripts/${g.filename}" alt="">${tier(g.cer)} · ${g.cer.toFixed(2)}`;
+    b.onclick = () => showPage(i);
+    $("msThumbs").appendChild(b);
+  });
+  $("msCredit").innerHTML = `Readings by the open model <b>${MS.model}</b> (built on ${MS.base_model}), trained on the ${MS.dataset} dataset. BhashaYantra adds the word-level confidence review.`;
+  showPage(0);
+}
+function showPage(i) {
+  msIdx = i;
+  const g = MS.gallery[i], thr = MS.official_summary.word_flags.threshold;
+  document.querySelectorAll(".thumb").forEach((t, k) => t.setAttribute("aria-pressed", k === i));
+  $("msImg").src = `/static/manuscripts/${g.filename}`;
+  const gold = new Set(g.gold.split(/\s+/)), compare = $("msCompare").checked;
+  const words = g.pred.split(/\s+/);
+  $("msPred").innerHTML = "";
+  words.forEach((w, k) => {
+    const s = document.createElement("span");
+    const c = g.word_conf[k] ?? 1;
+    s.className = "w" + (c <= thr ? " flag" : "") + (compare && !gold.has(w) ? " miss" : "");
+    s.title = `confidence ${c.toFixed(2)}`;
+    s.textContent = w;
+    $("msPred").append(s, " ");
+  });
+  $("msGold").textContent = g.gold;
+  $("msGold").hidden = !compare; $("missKey").hidden = !compare;
+}
+$("msCompare").onchange = () => MS && showPage(msIdx);
+document.querySelector('nav button[data-tab="scan"]').addEventListener("click", loadManuscripts);
+
+// ---------- Photo to text (runs in the browser with Tesseract.js) ----------
+let tessLoading = null;
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (!tessLoading) tessLoading = new Promise((res, rej) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    sc.onload = res; sc.onerror = () => rej(new Error("Could not load the text reader."));
+    document.head.appendChild(sc);
+  });
+  return tessLoading;
+}
+async function ocr(file, lang, statusEl) {
+  statusEl.textContent = "Loading text reader…";
+  await loadTesseract();
+  const { data } = await Tesseract.recognize(file, lang, {
+    logger: m => { if (m.status === "recognizing text") statusEl.textContent = `Reading photo… ${Math.round(m.progress * 100)}%`; }
+  });
+  return data.text.replace(/\s+/g, " ").trim();
+}
+$("ocrRoman").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const t = await ocr(f, "eng", $("ocrRomanStatus"));
+    if (!t) { $("ocrRomanStatus").textContent = "No text found in that photo."; return; }
+    $("roman").value = t; $("ocrRomanStatus").textContent = "Text read from photo. Check it, then transliterate.";
+    $("goText").click();
+  } catch (err) { $("ocrRomanStatus").innerHTML = '<span class="error">' + err.message + '</span>'; }
+  e.target.value = "";
+};
+$("ocrDeva").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const t = await ocr(f, "mar", $("toolStatus"));
+    if (!t) { $("toolStatus").textContent = "No text found in that photo."; return; }
+    setDir("to-modi"); $("modiIn").value = t; $("modiOut").value = "";
+    $("toolStatus").textContent = "Text read from photo."; $("goModi").click();
+  } catch (err) { $("toolStatus").innerHTML = '<span class="error">' + err.message + '</span>'; }
+  e.target.value = "";
+};
+
+// ---------- Voice (browser speech recognition, Modi tab only) ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) {
+  $("mic").disabled = true; $("micLang").disabled = true;
+  $("mic").title = "Speech input isn't supported in this browser (try Chrome or Edge).";
+} else {
+  let rec = null;
+  $("mic").onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = $("micLang").value; rec.interimResults = true;
+    setDir("to-modi"); $("modiOut").value = "";
+    $("mic").classList.add("live"); $("mic").textContent = "■ Stop";
+    $("toolStatus").textContent = "Listening…";
+    rec.onresult = ev => { $("modiIn").value = Array.from(ev.results).map(r => r[0].transcript).join(" "); };
+    rec.onerror = ev => { $("toolStatus").textContent = ev.error === "not-allowed" ? "Microphone permission was blocked." : "Couldn't hear that. Try again."; };
+    rec.onend = () => {
+      rec = null; $("mic").classList.remove("live"); $("mic").textContent = "🎤 Speak";
+      if ($("modiIn").value.trim()) { $("toolStatus").textContent = ""; $("goModi").click(); }
+    };
+    rec.start();
+  };
+}
 </script>
 </body>
 </html>
