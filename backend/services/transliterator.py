@@ -5,7 +5,10 @@ import unicodedata
 import ctranslate2
 from huggingface_hub import snapshot_download
 
-from backend.services.lexicon_ranker import rerank
+from backend.services.lexicon_ranker import needs_review, rerank
+from backend.services.script_filter import in_script
+
+WIDE_N = 10  # second, wider search for words the model is unsure about
 
 
 MODEL_REPO = "Singla0009/all-indic-transliteration"
@@ -70,8 +73,21 @@ class Transliterator:
 
         nbest = self._words_nbest([tokens[i] for i in word_idx], language_code, n)
         ranked = [rerank(hyps, language_code) for hyps in nbest]
+
+        # Adaptive search: most words are confident and stay fast. Unsure words get a
+        # wider search, used when it finds a real word the first search missed, or when
+        # the model becomes confident. Such words can still be flagged for review.
+        unsure = [k for k, cands in enumerate(ranked) if needs_review(cands, language_code)]
+        if unsure and n < WIDE_N:
+            wide = self._words_nbest([tokens[word_idx[k]] for k in unsure], language_code, WIDE_N)
+            for k, hyps in zip(unsure, wide):
+                wider = rerank(hyps, language_code)
+                found_real_word = wider[0]["known"] and not ranked[k][0]["known"]
+                if found_real_word or not needs_review(wider, language_code):
+                    ranked[k] = wider
         if learned:
-            ranked = [_apply_learned(cands, learned(language_code, tokens[i]))
+            ranked = [_apply_learned(cands, [(t, c) for t, c in learned(language_code, tokens[i])
+                                             if in_script(t, language_code)])
                       for i, cands in zip(word_idx, ranked)]
         out = list(tokens)
         for i, cands in zip(word_idx, ranked):

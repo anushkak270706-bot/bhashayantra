@@ -106,6 +106,9 @@
   .pick p { margin: 4px 8px 6px; font-size: .85rem; color: var(--ink-soft); }
   .pick button { display: block; width: 100%; text-align: left; font: 1.4rem var(--deva); background: none; border: 0; padding: 4px 10px; border-radius: 4px; color: var(--ink); cursor: pointer; }
   .pick button:hover, .pick button:focus-visible { background: #E4E8F2; }
+  .pick .own { display: flex; gap: 6px; border-top: 1px solid var(--rule); margin-top: 6px; padding: 8px 4px 2px; }
+  .pick .own input { font: 1.1rem var(--deva); width: 150px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: 4px; }
+  .pick .own button { font: 600 .85rem var(--ui); width: auto; padding: 4px 10px; border: 1.5px solid var(--ink); border-radius: 999px; }
 
   .pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
   .pair textarea { min-height: 150px; font: 1.5rem/1.7 var(--modi); }
@@ -388,23 +391,36 @@ function openPick(span, idx, roman) {
     const b = document.createElement("button"); b.textContent = alt; b.setAttribute("role", "menuitem");
     b.onclick = () => choose(idx, roman, alt); pick.appendChild(b);
   });
-  const r = span.getBoundingClientRect();
+  const own = document.createElement("div");
+  own.className = "own";
+  own.innerHTML = `<input type="text" aria-label="Type the correct word" placeholder="Type the correct word"><button type="button">Save</button>`;
+  const input = own.querySelector("input");
+  const submit = () => {
+    const typed = input.value.trim();
+    if (!typed) { input.focus(); return; }
+    if (/[A-Za-z]/.test(typed) || typed.length > 40) { toast("Type the word in its own script (e.g. a Hindi/Marathi keyboard)"); return; }
+    choose(idx, roman, typed, true);
+  };
+  own.querySelector("button").onclick = submit;
+  input.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); submit(); } };
+  pick.appendChild(own);
+    const r = span.getBoundingClientRect();
   pick.style.left = (r.left + window.scrollX) + "px"; pick.style.top = (r.bottom + window.scrollY + 6) + "px";
   pick.style.display = "block"; pick.querySelector("button")?.focus();
 }
 document.addEventListener("click", e => { if (!e.target.closest(".pick, .w")) $("pick").style.display = "none"; });
 document.addEventListener("keydown", e => { if (e.key === "Escape") $("pick").style.display = "none"; });
 
-async function choose(idx, roman, alt) {
+async function choose(idx, roman, alt, typed = false) {
   const w = last.words[idx], before = w.best;
-  w.alternatives = [before, ...w.alternatives.filter(a => a !== alt)];
+  w.alternatives = [before, ...w.alternatives.filter(a => a !== alt && a !== before)];
   w.best = alt; w.fixed = true; w.needs_review = false;
   $("pick").style.display = "none"; renderOutput();
   try {
     await call("/corrections", {source_text: roman, source_script: "latin", model_output: before,
                                 corrected_output: alt, engine: "indicxlit",
                                 language_code: last.language_code});
-    toast("Correction saved");
+    toast(typed ? "Saved. Once another reviewer agrees, everyone gets this reading." : "Correction saved. BhashaYantra will use it next time.");
   } catch { toast("Changed here, but the correction could not be saved"); }
 }
 
