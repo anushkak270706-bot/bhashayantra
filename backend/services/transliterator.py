@@ -18,8 +18,7 @@ _TOKEN = re.compile(r"(\s+|[^\w\s]+)")
 # Exact language tags in the model's vocabulary (checked from source_vocabulary.json)
 MODEL_TAGS = {"as", "bn", "brx", "gom", "gu", "hi", "kn", "ks", "mai", "ml", "mni",
               "mr", "ne", "or", "pa", "sa", "sd", "si", "ta", "te", "ur"}
-CODE_TO_TAG = {"kok": "gom"}  # our code -> model's tag
-
+CODE_TO_TAG = {"kok": "gom", "bn": "as", "as": "bn"}  # our code -> model's tag (bn/as swapped in this model)
 
 def model_tag(language_code: str) -> str:
     tag = CODE_TO_TAG.get(language_code, language_code)
