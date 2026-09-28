@@ -16,8 +16,7 @@ from backend.services.confidence_evaluator import ConfidenceEvaluator
 from backend.services.candidate_ranker import CandidateRanker
 from backend.services.human_verification import HumanVerificationService
 from backend.services.correction_store import count_corrections, save_correction, storage_backend
-from backend.services.lexicon_ranker import has_lexicon
-
+from backend.services.lexicon_ranker import has_lexicon, needs_review as review_needed  
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -322,7 +321,7 @@ def transliterate(request: TransliterationRequest):
         best = cands[0]
         # Only meaningful where a word list exists: flag words where
         # no candidate is a known real word.
-        needs_review = lexicon and not any(c["known"] for c in cands)
+        needs_review = review_needed(cands, request.language_code)      
         words.append({
             "best": best["text"],
             "alternatives": [c["text"] for c in cands[1:4]],
