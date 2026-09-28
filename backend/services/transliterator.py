@@ -18,7 +18,8 @@ _TOKEN = re.compile(r"(\s+|[^\w\s]+)")
 # Exact language tags in the model's vocabulary (checked from source_vocabulary.json)
 MODEL_TAGS = {"as", "bn", "brx", "gom", "gu", "hi", "kn", "ks", "mai", "ml", "mni",
               "mr", "ne", "or", "pa", "sa", "sd", "si", "ta", "te", "ur"}
-CODE_TO_TAG = {"kok": "gom", "bn": "as", "as": "bn"}  # our code -> model's tag (bn/as swapped in this model)
+CODE_TO_TAG = {"kok": "gom", "bn": "as", "as": "bn"}  # our code -> model's tag
+
 
 def model_tag(language_code: str) -> str:
     tag = CODE_TO_TAG.get(language_code, language_code)
@@ -53,10 +54,11 @@ class Transliterator:
             return_scores=True,
         )
         return [
-            [(unicodedata.normalize("NFC", "".join(h)), float(s)) for h, s in zip(r.hypotheses, r.scores)]            for r in results
+            [(unicodedata.normalize("NFC", "".join(h)), float(s)) for h, s in zip(r.hypotheses, r.scores)]
+            for r in results
         ]
 
-    def roman_to_indic_detailed(self, text: str, language_code: str, n: int = 3):
+    def roman_to_indic_detailed(self, text: str, language_code: str, n: int = 3, learned=None):
         """Returns (output_text, per_word ranked candidates).
 
         Each word's candidates are the model's n-best, re-ranked by real-word frequency.
@@ -68,6 +70,9 @@ class Transliterator:
 
         nbest = self._words_nbest([tokens[i] for i in word_idx], language_code, n)
         ranked = [rerank(hyps, language_code) for hyps in nbest]
+        if learned:
+            ranked = [_apply_learned(cands, learned(language_code, tokens[i]))
+                      for i, cands in zip(word_idx, ranked)]
         out = list(tokens)
         for i, cands in zip(word_idx, ranked):
             out[i] = cands[0]["text"]
@@ -75,3 +80,16 @@ class Transliterator:
 
     def roman_to_indic(self, text: str, language_code: str) -> str:
         return self.roman_to_indic_detailed(text, language_code, n=3)[0]
+
+
+def _apply_learned(cands: list, votes: list, min_agreement: int = 2) -> list:
+    """Put a user-corrected reading first. Trusted immediately if it is one of the
+    model's own candidates; otherwise only once min_agreement people chose it."""
+    texts = [c["text"] for c in cands]
+    for text, count in votes:
+        if text in texts or count >= min_agreement:
+            base = next((c for c in cands if c["text"] == text),
+                        {"text": text, "model_score": None, "zipf": 0.0})
+            row = {**base, "known": True, "confidence": 1.0, "learned": True, "votes": count}
+            return [row] + [c for c in cands if c["text"] != text]
+    return cands

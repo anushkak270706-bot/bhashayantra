@@ -15,8 +15,8 @@ from backend.services.script_detector import ScriptDetector
 from backend.services.confidence_evaluator import ConfidenceEvaluator
 from backend.services.candidate_ranker import CandidateRanker
 from backend.services.human_verification import HumanVerificationService
-from backend.services.correction_store import count_corrections, save_correction, storage_backend
-from backend.services.lexicon_ranker import has_lexicon, needs_review as review_needed  
+from backend.services.correction_store import count_corrections, learned_for, save_correction, storage_backend
+from backend.services.lexicon_ranker import has_lexicon, needs_review as review_needed
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -310,7 +310,8 @@ def transliterate(request: TransliterationRequest):
         result, ranked = transliterator.roman_to_indic_detailed(
             text=request.text,
             language_code=request.language_code,
-            n=4
+            n=4,
+            learned=learned_for
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -327,6 +328,7 @@ def transliterate(request: TransliterationRequest):
             "alternatives": [c["text"] for c in cands[1:4]],
             "known_word": best["known"],
             "needs_review": needs_review,
+            "learned": best.get("learned", False),
         })
 
     return {

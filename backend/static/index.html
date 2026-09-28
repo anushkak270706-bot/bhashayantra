@@ -9,11 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Tiro+Devanagari+Marathi&family=Noto+Sans+Modi&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #EDEFE8;      /* cool archival paper */
-    --sheet: #F8F9F5;      /* working surface */
-    --ink: #1D2847;        /* indigo ink */
-    --ink-soft: #5A6480;
-    --rule: #CDD2C6;
+    --paper: #E2DED0;      /* warm archive grey */
+    --sheet: #ECE9DF;      /* working surface */
+    --ink: #1B1A17;        /* iron-gall ink */
+    --ink-soft: #5E5A50;
+    --rule: #C9C3B2;
     --haldi: #E3A008;      /* turmeric: "check this word" */
     --haldi-wash: #FBEFC8;
     --leaf: #2F6B57;       /* confirmation */
@@ -23,16 +23,60 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.55 var(--ui); }
-  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
 
-  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
-  .brand { font: 2rem/1 var(--deva); margin: 0; }
-  .brand span { font: 500 1rem var(--ui); color: var(--ink-soft); margin-left: 10px; }
+  /* ---------- editorial frame ---------- */
+  .top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+         padding: 14px clamp(16px, 4vw, 48px); background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(6px); }
+  .mark { font: 1.05rem var(--deva); letter-spacing: .02em; }
+  .top ol { list-style: none; display: flex; gap: clamp(10px, 2.4vw, 28px); margin: 0; padding: 0; flex-wrap: wrap; }
+  .top a { color: var(--ink); text-decoration: none; font: 500 .92rem var(--ui); }
+  .top a small { color: var(--ink-soft); margin-right: 5px; font-size: .75rem; }
+  .top a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .top #health { font-size: .8rem; }
+  @media (max-width: 720px) { .top #health { display: none; } }
 
-  nav { display: flex; gap: 4px; border-bottom: 2px solid var(--rule); margin-bottom: 24px; }
-  nav button { font: 500 1rem var(--ui); color: var(--ink-soft); background: none; border: 0; padding: 10px 14px;
+  .hero { min-height: calc(100vh - 60px); display: grid; align-content: center; gap: 28px;
+          padding: 4vh clamp(16px, 4vw, 48px) 8vh; max-width: 1280px; margin: 0 auto; }
+  .kicker { font: 500 .85rem var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+  .morph { margin: 0; line-height: 1; font-weight: 400; }
+  .stack { display: inline-grid; position: relative; }
+  .stack > span { grid-area: 1 / 1; font-size: clamp(4.2rem, 15vw, 13.5rem); white-space: nowrap; }
+  .morph .modi { font-family: var(--modi); }
+  .morph .deva { font-family: var(--deva); }
+  .scan-line { position: absolute; top: 4%; bottom: 4%; left: 0; width: 3px; background: var(--haldi); opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .morph .modi { animation: wipeOut 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .morph .deva { animation: wipeIn 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .scan-line { animation: sweep 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .hero .lede, .hero .counters, .hero .cue { animation: rise .8s 2.3s both; }
+  }
+  @media (prefers-reduced-motion: reduce) { .morph .modi { display: none; } }
+  @keyframes wipeOut { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+  @keyframes wipeIn  { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes sweep   { 0% { opacity: 1; left: 0%; } 95% { opacity: 1; } 100% { opacity: 0; left: 100%; } }
+  @keyframes rise    { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .lede { font-size: clamp(1.1rem, 2vw, 1.45rem); line-height: 1.5; max-width: 40ch; margin: 0; }
+  .counters { display: flex; gap: clamp(20px, 5vw, 64px); flex-wrap: wrap; border-top: 1px solid var(--ink); padding-top: 18px; }
+  .counters b { display: block; white-space: nowrap; font: 400 clamp(1.8rem, 3.6vw, 2.8rem)/1.1 var(--deva); font-variant-numeric: tabular-nums; }
+  .counters span { display: block; max-width: 22ch; font-size: .9rem; color: var(--ink-soft); }
+  .cue { color: var(--ink); font: 500 1rem var(--ui); text-decoration: none; justify-self: start; border-bottom: 1px solid var(--ink); padding-bottom: 2px; }
+
+  .section-title { display: flex; align-items: baseline; gap: 16px; margin: 0 0 18px; }
+  .section-title .num { font: 400 3.4rem/1 var(--deva); color: var(--ink-soft); }
+  .section-title h2 { font: 400 clamp(1.6rem, 3vw, 2.2rem)/1.1 var(--deva); margin: 0; }
+  .how-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 22px; }
+  .how-list li { display: grid; grid-template-columns: 56px 1fr; gap: 14px; border-top: 1px solid var(--rule); padding-top: 14px; }
+  .how-list li > b { font: 400 1.8rem/1 var(--deva); color: var(--ink-soft); }
+  .how-list h3 { margin: 0 0 4px; font: 600 1.05rem var(--ui); }
+  .how-list p { margin: 0; color: var(--ink-soft); }
+  #how, #tool { scroll-margin-top: 70px; }
+
+
+  nav[role="tablist"] { display: flex; gap: 4px; border-bottom: 2px solid var(--rule); margin-bottom: 24px; overflow-x: auto; }
+  nav[role="tablist"] button { font: 500 1rem var(--ui); color: var(--ink-soft); background: none; border: 0; padding: 10px 14px;
                border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; }
-  nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+  nav[role="tablist"] button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
 
   .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 24px; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
@@ -112,27 +156,40 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1 class="brand">भाषायंत्र <span>BhashaYantra</span></h1>
-    <span class="status" id="health">Connecting…</span>
-  </header>
+<nav class="top" aria-label="Sections">
+  <span class="mark">भाषायंत्र · BhashaYantra</span>
+  <ol>
+    <li><a href="#tool" data-go="text"><small>01</small>Type</a></li>
+    <li><a href="#tool" data-go="modi"><small>02</small>Modi</a></li>
+    <li><a href="#tool" data-go="scan"><small>03</small>Manuscripts</a></li>
+    <li><a href="#how"><small>04</small>How it works</a></li>
+  </ol>
+  <span class="status" id="health">Connecting…</span>
+</nav>
 
-  <details class="how">
-    <summary>How it works</summary>
-    <ol>
-      <li><b>Detects the script</b> of what you enter, including historical scripts like Modi.</li>
-      <li><b>Routes it</b> to the right method: a neural model for 21 modern languages, our verified character mapping for Modi.</li>
-      <li><b>Ranks the top candidate readings</b> for every word, preferring real, common words.</li>
-      <li><b>Shows its doubts.</b> Words it isn't sure about are marked; you can pick another reading, and your correction is saved.</li>
-    </ol>
-    <p>Tested on 20 languages with 300 held-out words each. Code and results: <a href="https://github.com/anushkak270706-bot/bhashayantra" target="_blank" rel="noopener">GitHub</a>.</p>
-  </details>
+<header class="hero">
+  <span class="kicker">India's scripts, readable again</span>
+  <h1 class="morph" aria-label="भाषायंत्र (BhashaYantra)">
+    <span class="stack">
+      <span class="modi" aria-hidden="true">𑘥𑘰𑘬𑘰𑘧𑘽𑘝𑘿𑘨</span>
+      <span class="deva" aria-hidden="true">भाषायंत्र</span>
+      <i class="scan-line" aria-hidden="true"></i>
+    </span>
+  </h1>
+  <p class="lede">Millions of Marathi records were written in Modi, a script almost no one can read today. BhashaYantra reads them into Devanagari, and marks every word it isn't sure of, so a human checks what matters.</p>
+  <div class="counters">
+    <div><b data-count="40000000">4,00,00,000</b><span>Modi documents still unread</span></div>
+    <div><b>80%</b><span>of unseen manuscript pages usable as first drafts</span></div>
+    <div><b>21</b><span>modern Indian languages, measured one by one</span></div>
+  </div>
+  <a class="cue" href="#tool">Try it ↓</a>
+</header>
 
+<div class="wrap" id="tool">
   <nav role="tablist">
-    <button role="tab" aria-selected="true" data-tab="text">Type in Roman letters</button>
-    <button role="tab" aria-selected="false" data-tab="modi">Modi script</button>
-    <button role="tab" aria-selected="false" data-tab="scan">Manuscript scan</button>
+    <button role="tab" aria-selected="true" data-tab="text">01 · Type in Roman letters</button>
+    <button role="tab" aria-selected="false" data-tab="modi">02 · Modi script</button>
+    <button role="tab" aria-selected="false" data-tab="scan">03 · Manuscripts</button>
   </nav>
 
   <!-- Roman -> Indic -->
@@ -222,6 +279,17 @@
 
 </div>
 
+<section class="wrap" id="how">
+  <div class="section-title"><span class="num">04</span><h2>How it works</h2></div>
+  <ol class="how-list">
+    <li><b>1</b><div><h3>Detects the script</h3><p>From the characters you enter, including historical scripts like Modi, Sharada and Grantha.</p></div></li>
+    <li><b>2</b><div><h3>Routes it to the right method</h3><p>A neural model for 21 modern languages, our verified character mapping for Modi text, and an open vision model for handwritten Modi pages.</p></div></li>
+    <li><b>3</b><div><h3>Ranks the candidate readings</h3><p>Several readings per word, re-ranked to prefer real, common words where word lists exist.</p></div></li>
+    <li><b>4</b><div><h3>Shows its doubts</h3><p>Words the model is unsure of are marked, using a threshold chosen on validation data and tested on unseen words. Your corrections are saved.</p></div></li>
+  </ol>
+  <p class="note" style="margin-top:22px">Tested on 20 languages (300 unseen words each) and 60 unseen manuscript pages. Code and results on <a href="https://github.com/anushkak270706-bot/bhashayantra" target="_blank" rel="noopener">GitHub</a>.</p>
+</section>
+
 <div class="pick" id="pick" role="menu"></div>
 <div class="toast" id="toast" role="status"></div>
 
@@ -250,8 +318,8 @@ async function call_(path, body) {
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; setTimeout(() => t.style.display = "none", 2200); }
 
 // Tabs
-document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
-  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+document.querySelectorAll('nav[role="tablist"] button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav[role="tablist"] button').forEach(x => x.setAttribute("aria-selected", x === b));
   ["text", "modi", "scan"].forEach(t => $("tab-" + t).hidden = t !== b.dataset.tab);
 });
 
@@ -289,7 +357,8 @@ function renderOutput() {
     if (/\w/.test(tok) && !/^\s+$/.test(tok) && last.words[k]) {
       const w = last.words[k], idx = k++;
       const span = document.createElement("span");
-      span.className = "w" + (w.needs_review ? " flag" : "") + (w.fixed ? " fixed" : "");
+      span.className = "w" + (w.needs_review ? " flag" : "") + (w.fixed || w.learned ? " fixed" : "");
+      if (w.learned) span.title = "Learned from a user correction";
       span.textContent = w.best; span.tabIndex = 0;
       span.dataset.roman = tok; span.dataset.idx = idx;
       span.onclick = e => openPick(span, idx, tok);
@@ -301,6 +370,8 @@ function renderOutput() {
   $("outStatus").innerHTML = flagged
     ? `<b>${flagged} word${flagged > 1 ? "s" : ""}</b> marked for checking. Click a word to see other readings.`
     : "No words flagged. Click any word to see other readings.";
+  const learnedN = last.words.filter(w => w.learned).length;
+  if (learnedN) $("outStatus").innerHTML += ` <span style="color:var(--leaf)">${learnedN} word${learnedN > 1 ? "s" : ""} learned from earlier corrections (green underline).</span>`;
 }
 
 function openPick(span, idx, roman) {
@@ -373,6 +444,24 @@ $("goModi").onclick = async () => {
   } catch (e) { $("modiStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
 };
 
+// ---------- Top navigation: jump to a tab ----------
+document.querySelectorAll(".top a[data-go]").forEach(a => a.addEventListener("click", () => {
+  document.querySelector(`nav[role="tablist"] button[data-tab="${a.dataset.go}"]`).click();
+}));
+
+// ---------- Hero counter ----------
+(() => {
+  const el = document.querySelector("[data-count]");
+  if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const target = +el.dataset.count, t0 = performance.now() + 2300, dur = 1600;
+  const tick = now => {
+    const k = Math.min(Math.max((now - t0) / dur, 0), 1), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = Math.round(target * e).toLocaleString("en-IN");
+    if (k < 1) requestAnimationFrame(tick);
+  };
+  el.textContent = "0"; requestAnimationFrame(tick);
+})();
+
 // ---------- Manuscripts gallery ----------
 let MS = null, msIdx = 0;
 const tier = c => c < 0.10 ? "Excellent" : c < 0.20 ? "Good" : c <= 0.40 ? "Usable draft" : "Hard page";
@@ -412,7 +501,7 @@ function showPage(i) {
   $("msGold").hidden = !compare; $("missKey").hidden = !compare;
 }
 $("msCompare").onchange = () => MS && showPage(msIdx);
-document.querySelector('nav button[data-tab="scan"]').addEventListener("click", loadManuscripts);
+document.querySelector('nav[role="tablist"] button[data-tab="scan"]').addEventListener("click", loadManuscripts);
 
 // ---------- Photo to text (runs in the browser with Tesseract.js) ----------
 let tessLoading = null;

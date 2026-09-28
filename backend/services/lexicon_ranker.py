@@ -12,10 +12,13 @@ import math
 
 from wordfreq import available_languages, zipf_frequency
 
+from backend.services.script_filter import filter_candidates
+
 SUPPORTED = set(available_languages())
 FREQ_WEIGHT = 2.0
 CONF_TOP_K = 4          # same number of candidates the live app requests
 CONF_THRESHOLD = 0.29   # chosen on the validation split (flag ~20-25% of words)
+
 
 def has_lexicon(language_code: str) -> bool:
     return language_code in SUPPORTED
@@ -38,6 +41,7 @@ def _shares(hyps: list) -> dict:
 def rerank(hyps: list, language_code: str) -> list:
     """hyps: [(candidate, log_score), ...] best-first ->
     [{"text", "model_score", "zipf", "known", "confidence"}], best first."""
+    hyps = filter_candidates(hyps, language_code)
     use_freq = has_lexicon(language_code)
     shares = _shares(hyps)
     rows = []
