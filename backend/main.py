@@ -118,9 +118,12 @@ class CorrectionRequest(BaseModel):
 
 @app.get("/", include_in_schema=False)
 def home():
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse("/app")
+    return FileResponse(Path(__file__).resolve().parent / "static" / "landing.html")
 
+
+@app.get("/about", include_in_schema=False)
+def about_page():
+    return FileResponse(Path(__file__).resolve().parent / "static" / "about.html")
 
 @app.get("/languages")
 def get_languages():
