@@ -101,7 +101,7 @@
     <ol>
       <li><b>Detects the script</b> of what you enter, including historical scripts like Modi.</li>
       <li><b>Routes it</b> to the right method: a neural model for 21 modern languages, our verified character mapping for Modi.</li>
-      <li><b>Ranks the top candidate readings</b> for every word, preferring real, common words.</li>
+      <li><b>Ranks the tops candidate readings</b> for every word, preferring real, common words.</li>
       <li><b>Shows its doubts.</b> Words it isn't sure about are marked; you can pick another reading, and your correction is saved.</li>
     </ol>
     <p>Tested on 20 languages with 300 held-out words each. Code and results: <a href="https://github.com/anushkak270706-bot/bhashayantra" target="_blank" rel="noopener">GitHub</a>.</p>
@@ -274,7 +274,8 @@ async function choose(idx, roman, alt) {
   $("pick").style.display = "none"; renderOutput();
   try {
     await call("/corrections", {source_text: roman, source_script: "latin", model_output: before,
-                                corrected_output: alt, engine: "indicxlit"});
+                                corrected_output: alt, engine: "indicxlit",
+                                language_code: last.language_code});
     toast("Correction saved");
   } catch { toast("Changed here, but the correction could not be saved"); }
 }

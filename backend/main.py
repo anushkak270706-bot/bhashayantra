@@ -15,7 +15,7 @@ from backend.services.script_detector import ScriptDetector
 from backend.services.confidence_evaluator import ConfidenceEvaluator
 from backend.services.candidate_ranker import CandidateRanker
 from backend.services.human_verification import HumanVerificationService
-from backend.services.correction_store import save_correction
+from backend.services.correction_store import count_corrections, save_correction, storage_backend
 from backend.services.lexicon_ranker import has_lexicon
 
 logging.basicConfig(
@@ -113,6 +113,7 @@ class CorrectionRequest(BaseModel):
     model_output: str
     corrected_output: str
     engine: str
+    language_code: Optional[str] = None
     document_id: Optional[str] = None
 
 
@@ -343,9 +344,21 @@ def transliterate(request: TransliterationRequest):
 @app.post("/corrections")
 def corrections(request: CorrectionRequest):
     """Expert corrections become labelled training data."""
-    total = save_correction(request.model_dump())
-    return {"saved": True, "total_corrections": total}
+    try:
+        total = save_correction(request.model_dump())
+    except Exception:
+        logger.exception("Could not save correction")
+        raise HTTPException(status_code=503, detail="Could not save the correction right now. Please try again.")
+    return {"saved": True, "total_corrections": total, "storage": storage_backend()}
 
+
+@app.get("/corrections/count")
+def corrections_count():
+    try:
+        return {"total_corrections": count_corrections(), "storage": storage_backend()}
+    except Exception:
+        logger.exception("Could not count corrections")
+        raise HTTPException(status_code=503, detail="Correction storage is unavailable right now.")
 # ---- Web app (single page, served by this same server) ----
 from pathlib import Path
 from fastapi.responses import FileResponse

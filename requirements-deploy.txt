@@ -7,3 +7,4 @@ ctranslate2
 huggingface_hub
 indic_transliteration
 wordfreq
+psycopg[binary]
