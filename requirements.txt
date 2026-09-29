@@ -1,2 +1,13 @@
+# Local development (Python 3.12). The server on Render uses requirements-deploy.txt.
+fastapi
+uvicorn
+pydantic
 ctranslate2
 huggingface_hub
+indic_transliteration
+wordfreq
+psycopg[binary]
+httpx
+python-multipart
+fasttext-wheel     # language detection (optional on small servers)
+pytest
