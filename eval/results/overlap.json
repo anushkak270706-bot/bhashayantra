@@ -1,0 +1,142 @@
+[
+  {
+    "language": "as",
+    "zip_MB": 5.0,
+    "train_unique_words": 177722,
+    "test_unique_words": 3857,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "bn",
+    "zip_MB": 33.2,
+    "train_unique_words": 1129296,
+    "test_unique_words": 7134,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "brx",
+    "zip_MB": 1.0,
+    "train_unique_words": 33737,
+    "test_unique_words": 3804,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "gu",
+    "zip_MB": 31.1,
+    "train_unique_words": 1057631,
+    "test_unique_words": 6922,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "hi",
+    "zip_MB": 33.1,
+    "train_unique_words": 1153742,
+    "test_unique_words": 6424,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "kn",
+    "zip_MB": 87.6,
+    "train_unique_words": 2871160,
+    "test_unique_words": 6592,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "ks",
+    "zip_MB": 1.2,
+    "train_unique_words": 36022,
+    "test_unique_words": 3952,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "kok",
+    "zip_MB": 17.4,
+    "train_unique_words": 578108,
+    "test_unique_words": 3958,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "mai",
+    "zip_MB": 7.1,
+    "train_unique_words": 220787,
+    "test_unique_words": 3936,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "ml",
+    "zip_MB": 130.6,
+    "train_unique_words": 4060664,
+    "test_unique_words": 6468,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "mr",
+    "zip_MB": 41.8,
+    "train_unique_words": 1419609,
+    "test_unique_words": 6489,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "mni",
+    "zip_MB": 0.3,
+    "train_unique_words": 7640,
+    "test_unique_words": 4097,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "ne",
+    "zip_MB": 70.1,
+    "train_unique_words": 2392263,
+    "test_unique_words": 3944,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "or",
+    "zip_MB": 9.5,
+    "train_unique_words": 342866,
+    "test_unique_words": 3992,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "pa",
+    "zip_MB": 12.7,
+    "train_unique_words": 463586,
+    "test_unique_words": 6525,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "sa",
+    "zip_MB": 58.6,
+    "train_unique_words": 1809748,
+    "test_unique_words": 4349,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "sd",
+    "zip_MB": 1.4,
+    "train_unique_words": 43685,
+    "test_unique_words": 2500,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "ta",
+    "zip_MB": 97.1,
+    "train_unique_words": 3175646,
+    "test_unique_words": 6493,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "te",
+    "zip_MB": 72.4,
+    "train_unique_words": 2375149,
+    "test_unique_words": 6730,
+    "test_words_also_in_train_%": 0.0
+  },
+  {
+    "language": "ur",
+    "zip_MB": 17.8,
+    "train_unique_words": 638125,
+    "test_unique_words": 6369,
+    "test_words_also_in_train_%": 0.1
+  }
+]

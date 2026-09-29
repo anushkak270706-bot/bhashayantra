@@ -1,0 +1,15 @@
+[
+  {
+    "language": "bn",
+    "words": 300,
+    "lexicon_reranking": true,
+    "model_top1_%": 53.0,
+    "ranked_top1_%": 60.7,
+    "top10_%": 86.7,
+    "CER_%": 12.63,
+    "flagged_%": 15.3,
+    "flag_precision_%": 67.4,
+    "unflagged_accuracy_%": 65.7,
+    "seconds": 5.0
+  }
+]

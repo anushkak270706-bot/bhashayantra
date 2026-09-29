@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BhashaYantra: India's scripts, readable again</title>
+<meta name="description" content="BhashaYantra reads handwritten Modi manuscripts, Modi text and 21 Indian languages into readable script, and marks every word it isn't sure of.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Tiro+Devanagari+Marathi&family=Noto+Sans+Modi&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/site.css">
+<style>
+  /* ---------- hero ---------- */
+  .hero { min-height: calc(100vh - 60px); display: grid; align-content: center; gap: 28px; padding: 4vh var(--edge) 8vh; max-width: 1320px; margin: 0 auto; }
+  .morph { margin: 0; line-height: 1; font-weight: 400; }
+  .stack { display: inline-grid; position: relative; }
+  .stack > span { grid-area: 1 / 1; font-size: clamp(4.2rem, 15vw, 13.5rem); white-space: nowrap; }
+  .stack .modi { font-family: var(--modi); }
+  .stack .deva { font-family: var(--deva); }
+  .scan-line { position: absolute; top: 4%; bottom: 4%; left: 0; width: 3px; background: var(--haldi); opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .stack .modi { animation: wipeOut 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .stack .deva { animation: wipeIn 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .scan-line { animation: sweep 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .hero .after { animation: rise .8s 2.3s both; }
+  }
+  @media (prefers-reduced-motion: reduce) { .stack .modi { display: none; } }
+  @keyframes wipeOut { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+  @keyframes wipeIn  { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes sweep   { 0% { opacity: 1; left: 0%; } 95% { opacity: 1; } 100% { opacity: 0; left: 100%; } }
+  @keyframes rise    { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .hero .after { display: grid; gap: 28px; }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ---------- problem ---------- */
+  .problem { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
+  .problem figure { margin: 0; }
+  .problem img { width: 100%; border-radius: 4px; box-shadow: 0 30px 60px -30px rgba(27,26,23,.45); transform: rotate(-1.2deg); }
+  .problem figcaption { font-size: .88rem; color: var(--ink-soft); margin-top: 14px; }
+  .big { font: 400 clamp(3.2rem, 9vw, 7.5rem)/1 var(--deva); margin: 0 0 8px; font-variant-numeric: tabular-nums; }
+  @media (max-width: 860px) { .problem { grid-template-columns: 1fr; } }
+
+  /* ---------- three ways in ---------- */
+  .ways { list-style: none; margin: 32px 0 0; padding: 0; }
+  .ways a { display: grid; grid-template-columns: 90px 1fr auto; gap: 20px; align-items: center; padding: 28px 0;
+            border-top: 1px solid var(--ink); text-decoration: none; position: relative; }
+  .ways li:last-child a { border-bottom: 1px solid var(--ink); }
+  .ways a::before { content: ""; position: absolute; left: 0; bottom: -1px; height: 2px; width: 0; background: var(--haldi); transition: width .5s cubic-bezier(.65,0,.35,1); }
+  .ways a:hover::before { width: 100%; }
+  .ways .n { font: 400 2.2rem var(--deva); color: var(--ink-soft); }
+  .ways h3 { font: 400 clamp(1.5rem, 3.4vw, 2.6rem)/1.1 var(--deva); margin: 0 0 6px; }
+  .ways p { margin: 0; color: var(--ink-soft); max-width: 58ch; }
+  .ways .go { font-size: 1.8rem; transition: transform .3s; }
+  .ways a:hover .go { transform: translateX(8px); }
+  @media (max-width: 640px) { .ways a { grid-template-columns: 48px 1fr; } .ways .go { display: none; } }
+
+  /* ---------- gallery ---------- */
+  .gallery-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; }
+  .strip { display: flex; gap: 20px; overflow-x: auto; padding: 32px var(--edge) 24px; cursor: grab; scrollbar-width: thin;
+           user-select: none; -webkit-user-select: none; scroll-snap-type: x proximity; }
+  .strip.dragging { cursor: grabbing; scroll-snap-type: none; }
+  .card { flex: 0 0 clamp(260px, 34vw, 460px); text-decoration: none; scroll-snap-align: start; }
+  .card img { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; border-radius: 4px; background: var(--sheet);
+              pointer-events: none; transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+  .card:hover img { transform: scale(1.02); }
+  .card .meta { display: flex; justify-content: space-between; font-size: .9rem; margin-top: 10px; }
+  .card .meta b { font-weight: 600; }
+  .drag-cursor { position: fixed; left: 0; top: 0; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%;
+                 background: var(--ink); color: var(--paper); display: grid; place-items: center; font: 600 .85rem var(--ui);
+                 pointer-events: none; z-index: 50; transform: scale(0); transition: transform .25s; }
+  .drag-cursor.on { transform: scale(1); }
+
+  /* ---------- results ---------- */
+  .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 36px; }
+  .results div { border-top: 1px solid var(--ink); padding-top: 16px; }
+  .results b { display: block; font: 400 clamp(2.4rem, 5vw, 4rem)/1 var(--deva); margin-bottom: 8px; }
+  .results span { color: var(--ink-soft); font-size: .95rem; }
+  @media (max-width: 860px) { .results { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add("js")</script>
+
+<nav class="top" aria-label="Site">
+  <a class="mark" href="/">भाषायंत्र · BhashaYantra</a>
+  <ol>
+    <li><a href="/" aria-current="page"><small>01</small>Home</a></li>
+    <li><a href="/app"><small>02</small>Tool</a></li>
+    <li><a href="/app#scan"><small>03</small>Manuscripts</a></li>
+    <li><a href="/about"><small>04</small>How it works</a></li>
+  </ol>
+</nav>
+
+<header class="hero">
+  <span class="kicker">India's scripts, readable again</span>
+  <h1 class="morph" aria-label="भाषायंत्र (BhashaYantra)">
+    <span class="stack">
+      <span class="modi" aria-hidden="true">𑘥𑘰𑘬𑘰𑘧𑘽𑘝𑘿𑘨</span>
+      <span class="deva" aria-hidden="true">भाषायंत्र</span>
+      <i class="scan-line" aria-hidden="true"></i>
+    </span>
+  </h1>
+  <div class="after">
+    <p class="lede">Millions of Marathi records were written in Modi, a script almost no one can read today. BhashaYantra reads them into Devanagari and marks every word it isn't sure of, so a human checks what matters.</p>
+    <div class="ctas">
+      <a class="btn solid" href="/app">Open the tool <span class="arrow">→</span></a>
+      <a class="btn" href="/app#scan">See real manuscripts</a>
+    </div>
+  </div>
+</header>
+
+<section class="section problem">
+  <div class="reveal">
+    <span class="kicker">The problem</span>
+    <p class="big" data-count="40000000">4,00,00,000</p>
+    <p class="lede">Modi documents are still unread: land grants, court records, letters, medicine. The language is still spoken; the script is no longer taught. Only a few experts can read these pages today.</p>
+    <p class="muted" style="margin-top:14px;font-size:.9rem">Source: Kausadikar et al., ICDAR 2025 (MoScNet).</p>
+  </div>
+  <figure class="reveal">
+    <img src="/static/manuscripts/1041.jpg" alt="A handwritten Modi manuscript page" loading="lazy">
+    <figcaption>A real Modi letter from the MoDeTrans collection. Can you read it? Almost nobody can.</figcaption>
+  </figure>
+</section>
+
+<section class="section">
+  <div class="reveal">
+    <span class="kicker">Three ways in</span>
+    <h2 class="h2">Type it, speak it, or photograph it.</h2>
+  </div>
+  <ol class="ways">
+    <li class="reveal"><a href="/app#scan"><span class="n">01</span><div><h3>Handwritten manuscripts</h3><p>A scanned Modi page becomes a Devanagari draft, with unsure words marked yellow so an expert checks those first.</p></div><span class="go">→</span></a></li>
+    <li class="reveal"><a href="/app#modi"><span class="n">02</span><div><h3>Modi ⇄ Devanagari</h3><p>Exact, verified conversion both ways. Type, speak Marathi, or point your camera at printed text.</p></div><span class="go">→</span></a></li>
+    <li class="reveal"><a href="/app#text"><span class="n">03</span><div><h3>21 Indian languages</h3><p>Type the way you would on a phone ("kal subah…") and get the right script. Click any word for other readings.</p></div><span class="go">→</span></a></li>
+  </ol>
+</section>
+
+<section aria-labelledby="g-title">
+  <div class="section gallery-head" style="padding-bottom:0">
+    <div class="reveal">
+      <span class="kicker">Real pages, read by machine</span>
+      <h2 class="h2" id="g-title">Eight unseen manuscripts.</h2>
+    </div>
+    <p class="muted reveal" style="max-width:40ch">None of these pages were used in training. The number is the share of characters the expert had to fix: lower is better.</p>
+  </div>
+  <div class="strip" id="strip" tabindex="0" aria-label="Manuscript pages; drag or use arrow keys to scroll"></div>
+</section>
+
+<section class="section">
+  <div class="reveal">
+    <span class="kicker">Measured, not claimed</span>
+    <h2 class="h2">What we tested, on data the system had never seen.</h2>
+  </div>
+  <div class="results">
+    <div class="reveal"><b>80%</b><span>of unseen manuscript pages usable as a first draft</span></div>
+    <div class="reveal"><b>89%</b><span>of words marked yellow are really wrong: flags point at mistakes</span></div>
+    <div class="reveal"><b>19/20</b><span>languages have the right word among the top 10 candidates 73–94% of the time</span></div>
+    <div class="reveal"><b>2</b><span>bugs found in a public model and library, and fixed</span></div>
+  </div>
+  <p class="reveal" style="margin-top:36px"><a class="btn" href="/about">How we measured <span class="arrow">→</span></a></p>
+</section>
+
+<footer class="foot">
+  <p><b>BhashaYantra</b> by Team DeepThink, Smart India Hackathon 2026. Built on IndicXlit (AI4Bharat), MoDeTrans and MoScNet (IIT Roorkee) and the open lgtk Modi model. Our part is the layer above: routing, verification, measurement.</p>
+  <p><a href="https://github.com/anushkak270706-bot/bhashayantra" target="_blank" rel="noopener">Code on GitHub</a></p>
+</footer>
+
+<div class="drag-cursor" id="dragCursor" aria-hidden="true">Drag</div>
+
+<script>
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Reveal sections as they scroll into view
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 });
+document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+// Count up the big number when it appears
+const bigNum = document.querySelector("[data-count]");
+if (bigNum && !reduce) {
+  const target = +bigNum.dataset.count;
+  const run = () => {
+    const t0 = performance.now(), dur = 1600;
+    const tick = now => {
+      const k = Math.min((now - t0) / dur, 1), e = 1 - Math.pow(1 - k, 3);
+      bigNum.textContent = Math.round(target * e).toLocaleString("en-IN");
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { o.disconnect(); run(); } }, { threshold: .6 }).observe(bigNum);
+}
+
+// Manuscript gallery (draggable)
+(async () => {
+  const strip = document.getElementById("strip");
+  try {
+    const data = await (await fetch("/static/manuscripts/manuscripts.json")).json();
+    data.gallery.forEach((g, i) => {
+      const a = document.createElement("a");
+      a.className = "card"; a.href = `/app#scan-${i}`;
+      a.innerHTML = `<img src="/static/manuscripts/${g.filename}" alt="Modi manuscript page ${i + 1}" loading="lazy">
+        <div class="meta"><b>Page ${String(i + 1).padStart(2, "0")}</b><span>${Math.round(g.cer * 100)}% of characters fixed</span></div>`;
+      strip.appendChild(a);
+    });
+  } catch { strip.innerHTML = '<p class="muted">Manuscript examples could not be loaded.</p>'; }
+
+  // drag to scroll; a small drag doesn't count as a click
+  let down = false, startX = 0, startLeft = 0, moved = 0;
+  strip.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse") return; down = true; moved = 0; startX = e.clientX; startLeft = strip.scrollLeft; strip.classList.add("dragging"); });
+  window.addEventListener("pointerup", () => { down = false; strip.classList.remove("dragging"); });
+  window.addEventListener("pointermove", e => { if (!down) return; const dx = e.clientX - startX; moved = Math.max(moved, Math.abs(dx)); strip.scrollLeft = startLeft - dx; });
+  strip.addEventListener("click", e => { if (moved > 6) { e.preventDefault(); e.stopPropagation(); } }, true);
+  strip.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") strip.scrollBy({ left: 360, behavior: reduce ? "auto" : "smooth" });
+    if (e.key === "ArrowLeft") strip.scrollBy({ left: -360, behavior: reduce ? "auto" : "smooth" });
+  });
+
+  // "Drag" cursor for mouse users
+  const dc = document.getElementById("dragCursor");
+  if (matchMedia("(pointer: fine)").matches && !reduce) {
+    strip.addEventListener("pointerenter", () => dc.classList.add("on"));
+    strip.addEventListener("pointerleave", () => dc.classList.remove("on"));
+    window.addEventListener("pointermove", e => { dc.style.left = e.clientX + "px"; dc.style.top = e.clientY + "px"; });
+  }
+})();
+</script>
+</body>
+</html>

@@ -15,7 +15,8 @@ from backend.services.script_detector import ScriptDetector
 from backend.services.confidence_evaluator import ConfidenceEvaluator
 from backend.services.candidate_ranker import CandidateRanker
 from backend.services.human_verification import HumanVerificationService
-
+from backend.services.correction_store import count_corrections, learned_for, save_correction, storage_backend
+from backend.services.lexicon_ranker import has_lexicon, needs_review as review_needed
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -25,6 +26,12 @@ logger = logging.getLogger(__name__)
 
 
 app = FastAPI(title="BhashaYantra API")
+
+
+from backend.services.rate_limit import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware, limit=30, window=60)
+
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,16 +105,34 @@ class ScriptConversionRequest(BaseModel):
     source_script: Optional[str] = None
     target_script: str
 
-@app.get("/")
-def home():
-    return {
-        "message": "BhashaYantra backend is running!"
-    }
 
+class CorrectionRequest(BaseModel):
+    source_text: str
+    source_script: str
+    model_output: str
+    corrected_output: str
+    engine: str
+    language_code: Optional[str] = None
+    document_id: Optional[str] = None
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(Path(__file__).resolve().parent / "static" / "landing.html")
+
+
+@app.get("/about", include_in_schema=False)
+def about_page():
+    return FileResponse(Path(__file__).resolve().parent / "static" / "about.html")
 
 @app.get("/languages")
 def get_languages():
     return LANGUAGES
+
+
+@app.get("/scripts")
+def get_scripts():
+    return {"script_bridge": script_bridge.supported_scripts()}
 
 
 @app.post("/detect-language")
@@ -119,8 +144,10 @@ def detect_language(request: LanguageDetectionRequest):
             detail="Text cannot be empty"
         )
 
-    predictions = language_detector.detect(request.text)
-
+    try:
+        predictions = language_detector.detect(request.text)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
     return {
         "input": request.text,
         "predictions": predictions
@@ -144,50 +171,54 @@ def convert_script(request: ScriptConversionRequest):
             detail="Could not detect the source script."
         )
 
-    result = router.route(
-        input_type="script"
-    ).convert(
-        text=request.text,
-        source_script=source_script,
-        target_script=request.target_script
-    )
+    # FIX: unsupported scripts used to crash with a 500; now a clear 400
+    try:
+        result = router.route(
+            input_type="script"
+        ).convert(
+            text=request.text,
+            source_script=source_script,
+            target_script=request.target_script
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     confidence = confidence_evaluator.evaluate(
-    detector_confidence if detector_confidence is not None else 1.0
+        detector_confidence if detector_confidence is not None else 1.0
     )
 
     candidates = candidate_ranker.rank([
-    {
-        "text": result,
-        "score": confidence["score"]
-    }
-])
+        {
+            "text": result,
+            "score": confidence["score"]
+        }
+    ])
 
     review = human_verification.create_review(
-    confidence=confidence,
-    candidates=candidates
-)
+        confidence=confidence,
+        candidates=candidates
+    )
 
     return {
-    "input": request.text,
-    "source_script": source_script,
-    "target_script": request.target_script,
-    "detector_confidence": detector_confidence,
-    "confidence": confidence,
-    "candidates": candidates,
-    "review": review,
-    "status": "success",
-    "output": result
-}
+        "input": request.text,
+        "source_script": source_script,
+        "target_script": request.target_script,
+        "detector_confidence": detector_confidence,
+        "confidence": confidence,
+        "candidates": candidates,
+        "review": review,
+        "status": "success",
+        "output": result
+    }
 
 
 @app.post("/auto-transliterate")
 def auto_transliterate(request: AutoTransliterationRequest):
 
     logger.info(
-    "Auto-transliteration request received: %s",
-    request.text
-)
+        "Auto-transliteration request received: %s",
+        request.text
+    )
 
     if not request.text.strip():
         raise HTTPException(
@@ -211,8 +242,10 @@ def auto_transliterate(request: AutoTransliterationRequest):
     # Otherwise, detect the language automatically
     else:
 
-        predictions = language_detector.detect(request.text)
-
+        try:
+            predictions = language_detector.detect(request.text)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
         best_prediction = predictions[0]
         detector_confidence = best_prediction["confidence"]
 
@@ -245,8 +278,9 @@ def auto_transliterate(request: AutoTransliterationRequest):
             detail=f"No transliteration model is configured for '{internal_code}'"
         )
 
-    # Transliterate using the selected or detected language
-        engine = router.route(
+    # FIX: these lines were indented inside the `if model_code is None:` block,
+    # after the `raise`, so they never ran and `engine` was undefined below.
+    engine = router.route(
         input_type="text",
         language_code=internal_code
     )
@@ -275,14 +309,73 @@ def transliterate(request: TransliterationRequest):
             detail=f"Unsupported language code: {request.language_code}"
         )
 
-    result = transliterator.roman_to_indic(
-        text=request.text,
-        language_code=request.language_code
-    )
+    try:
+        result, ranked = transliterator.roman_to_indic_detailed(
+            text=request.text,
+            language_code=request.language_code,
+            n=4,
+            learned=learned_for
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    lexicon = has_lexicon(request.language_code)
+    words = []
+    for cands in ranked:
+        best = cands[0]
+        # Only meaningful where a word list exists: flag words where
+        # no candidate is a known real word.
+        needs_review = review_needed(cands, request.language_code)      
+        words.append({
+            "best": best["text"],
+            "alternatives": [c["text"] for c in cands[1:4]],
+            "known_word": best["known"],
+            "needs_review": needs_review,
+            "learned": best.get("learned", False),
+        })
 
     return {
         "input": request.text,
         "language": LANGUAGES[request.language_code]["name"],
         "language_code": request.language_code,
-        "output": result
+        "output": result,
+        "lexicon_reranking": lexicon,
+        "flagged_words": sum(w["needs_review"] for w in words),
+        "words": words
     }
+
+
+@app.post("/corrections")
+def corrections(request: CorrectionRequest):
+    """Expert corrections become labelled training data."""
+    try:
+        total = save_correction(request.model_dump())
+    except Exception:
+        logger.exception("Could not save correction")
+        raise HTTPException(status_code=503, detail="Could not save the correction right now. Please try again.")
+    return {"saved": True, "total_corrections": total, "storage": storage_backend()}
+
+
+@app.get("/corrections/count")
+def corrections_count():
+    try:
+        return {"total_corrections": count_corrections(), "storage": storage_backend()}
+    except Exception:
+        logger.exception("Could not count corrections")
+        raise HTTPException(status_code=503, detail="Correction storage is unavailable right now.")
+# ---- Web app (single page, served by this same server) ----
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+
+@app.get("/app", include_in_schema=False)
+def web_app():
+    return FileResponse(Path(__file__).resolve().parent / "static" / "index.html")
+
+# Static files (manuscript gallery images and data)
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")
+
+# Live manuscript reading via the Colab GPU
+from backend.services.gpu_bridge import router as gpu_router
+app.include_router(gpu_router)

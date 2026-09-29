@@ -1,0 +1,12 @@
+# Server install for deployment (Render). Language detection (fasttext) is left out;
+# set BHASHAYANTRA_LANG_DETECT=off on the server.
+fastapi
+uvicorn
+pydantic
+ctranslate2
+huggingface_hub
+indic_transliteration
+wordfreq
+psycopg[binary]
+httpx
+python-multipart

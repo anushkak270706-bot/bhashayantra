@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BhashaYantra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Tiro+Devanagari+Marathi&family=Noto+Sans+Modi&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/site.css">
+<style>
+  :root {
+    --paper: #E2DED0;      /* warm archive grey */
+    --sheet: #ECE9DF;      /* working surface */
+    --ink: #1B1A17;        /* iron-gall ink */
+    --ink-soft: #5E5A50;
+    --rule: #C9C3B2;
+    --haldi: #E3A008;      /* turmeric: "check this word" */
+    --haldi-wash: #FBEFC8;
+    --leaf: #2F6B57;       /* confirmation */
+    --ui: "Hind", "Segoe UI", system-ui, sans-serif;
+    --deva: "Tiro Devanagari Marathi", "Noto Serif Devanagari", "Nirmala UI", serif;
+    --modi: "Noto Sans Modi", "Tiro Devanagari Marathi", serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.55 var(--ui); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ---------- editorial frame ---------- */
+  .top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+         padding: 14px clamp(16px, 4vw, 48px); background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(6px); }
+  .mark { font: 1.05rem var(--deva); letter-spacing: .02em; }
+  .top ol { list-style: none; display: flex; gap: clamp(10px, 2.4vw, 28px); margin: 0; padding: 0; flex-wrap: wrap; }
+  .top a { color: var(--ink); text-decoration: none; font: 500 .92rem var(--ui); }
+  .top a small { color: var(--ink-soft); margin-right: 5px; font-size: .75rem; }
+  .top a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .top #health { font-size: .8rem; }
+  @media (max-width: 720px) { .top #health { display: none; } }
+
+  .hero { min-height: calc(100vh - 60px); display: grid; align-content: center; gap: 28px;
+          padding: 4vh clamp(16px, 4vw, 48px) 8vh; max-width: 1280px; margin: 0 auto; }
+  .kicker { font: 500 .85rem var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+  .morph { margin: 0; line-height: 1; font-weight: 400; }
+  .stack { display: inline-grid; position: relative; }
+  .stack > span { grid-area: 1 / 1; font-size: clamp(4.2rem, 15vw, 13.5rem); white-space: nowrap; }
+  .morph .modi { font-family: var(--modi); }
+  .morph .deva { font-family: var(--deva); }
+  .scan-line { position: absolute; top: 4%; bottom: 4%; left: 0; width: 3px; background: var(--haldi); opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .morph .modi { animation: wipeOut 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .morph .deva { animation: wipeIn 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .scan-line { animation: sweep 1.8s .7s cubic-bezier(.65,0,.35,1) both; }
+    .hero .lede, .hero .counters, .hero .cue { animation: rise .8s 2.3s both; }
+  }
+  @media (prefers-reduced-motion: reduce) { .morph .modi { display: none; } }
+  @keyframes wipeOut { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+  @keyframes wipeIn  { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes sweep   { 0% { opacity: 1; left: 0%; } 95% { opacity: 1; } 100% { opacity: 0; left: 100%; } }
+  @keyframes rise    { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .lede { font-size: clamp(1.1rem, 2vw, 1.45rem); line-height: 1.5; max-width: 40ch; margin: 0; }
+  .counters { display: flex; gap: clamp(20px, 5vw, 64px); flex-wrap: wrap; border-top: 1px solid var(--ink); padding-top: 18px; }
+  .counters b { display: block; white-space: nowrap; font: 400 clamp(1.8rem, 3.6vw, 2.8rem)/1.1 var(--deva); font-variant-numeric: tabular-nums; }
+  .counters span { display: block; max-width: 22ch; font-size: .9rem; color: var(--ink-soft); }
+  .cue { color: var(--ink); font: 500 1rem var(--ui); text-decoration: none; justify-self: start; border-bottom: 1px solid var(--ink); padding-bottom: 2px; }
+
+  .section-title { display: flex; align-items: baseline; gap: 16px; margin: 0 0 18px; }
+  .section-title .num { font: 400 3.4rem/1 var(--deva); color: var(--ink-soft); }
+  .section-title h2 { font: 400 clamp(1.6rem, 3vw, 2.2rem)/1.1 var(--deva); margin: 0; }
+  .how-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 22px; }
+  .how-list li { display: grid; grid-template-columns: 56px 1fr; gap: 14px; border-top: 1px solid var(--rule); padding-top: 14px; }
+  .how-list li > b { font: 400 1.8rem/1 var(--deva); color: var(--ink-soft); }
+  .how-list h3 { margin: 0 0 4px; font: 600 1.05rem var(--ui); }
+  .how-list p { margin: 0; color: var(--ink-soft); }
+  #how, #tool { scroll-margin-top: 70px; }
+
+
+  nav[role="tablist"] { display: flex; gap: 4px; border-bottom: 2px solid var(--rule); margin-bottom: 24px; overflow-x: auto; }
+  nav[role="tablist"] button { font: 500 1rem var(--ui); color: var(--ink-soft); background: none; border: 0; padding: 10px 14px;
+               border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; }
+  nav[role="tablist"] button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+  .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 24px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  label { font-weight: 500; font-size: .95rem; }
+  textarea, select { font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px; }
+  textarea { width: 100%; min-height: 96px; resize: vertical; }
+  select { padding: 8px 10px; }
+  :focus-visible { outline: 3px solid var(--haldi); outline-offset: 2px; }
+
+  .go { font: 600 1rem var(--ui); background: var(--ink); color: #fff; border: 0; border-radius: 4px; padding: 10px 20px; cursor: pointer; }
+  .go:disabled { opacity: .5; cursor: wait; }
+  .quiet { font: 500 .95rem var(--ui); background: none; border: 1px solid var(--rule); color: var(--ink); border-radius: 4px; padding: 8px 12px; cursor: pointer; }
+
+  .result { margin-top: 24px; min-height: 3.5em; }
+  .output { font: 2.1rem/1.9 var(--deva); word-spacing: .08em; }
+  .w { cursor: pointer; border-radius: 3px; padding: 0 2px; border-bottom: 2px solid transparent; }
+  .w:hover { background: #E4E8F2; }
+  .w.flag { background: var(--haldi-wash); border-bottom: 2px solid var(--haldi); }
+  .w.fixed { border-bottom: 2px solid var(--leaf); }
+  .status { color: var(--ink-soft); font-size: .95rem; margin-top: 8px; }
+  .status b { color: var(--ink); }
+  .error { color: #9B1C1C; }
+
+  .pick { position: absolute; background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 6px;
+          box-shadow: 0 6px 24px rgba(29,40,71,.14); display: none; z-index: 10; min-width: 150px; }
+  .pick p { margin: 4px 8px 6px; font-size: .85rem; color: var(--ink-soft); }
+  .pick button { display: block; width: 100%; text-align: left; font: 1.4rem var(--deva); background: none; border: 0; padding: 4px 10px; border-radius: 4px; color: var(--ink); cursor: pointer; }
+  .pick button:hover, .pick button:focus-visible { background: #E4E8F2; }
+  .pick .own { display: flex; gap: 6px; border-top: 1px solid var(--rule); margin-top: 6px; padding: 8px 4px 2px; }
+  .pick .own input { font: 1.1rem var(--deva); width: 150px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: 4px; }
+  .pick .own button { font: 600 .85rem var(--ui); width: auto; padding: 4px 10px; border: 1.5px solid var(--ink); border-radius: 999px; }
+
+  .pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
+  .pair textarea { min-height: 150px; font: 1.5rem/1.7 var(--modi); }
+  .swap { align-self: center; }
+  @media (max-width: 640px) { .pair { grid-template-columns: 1fr; } .swap { justify-self: start; } }
+
+  .drop { border: 2px dashed var(--rule); border-radius: 6px; padding: 48px 20px; text-align: center; color: var(--ink-soft); }
+  .drop h2 { font: 1.8rem var(--modi); color: var(--ink); margin: 0 0 8px; }
+  footer { margin-top: 28px; font-size: .9rem; color: var(--ink-soft); }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--leaf); color: #fff;
+           padding: 10px 18px; border-radius: 4px; display: none; }
+  [hidden] { display: none !important; }
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+  .examples span { font-size: .9rem; color: var(--ink-soft); margin-right: 2px; }
+  .chip { font: .95rem var(--ui); background: #fff; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px; color: var(--ink); cursor: pointer; }
+  .chip:hover { border-color: var(--ink); }
+  .chip .d { font-family: var(--deva); }
+  .copy { margin-left: auto; }
+  .how { margin: 0 0 20px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; }
+  .how summary { cursor: pointer; padding: 12px 16px; font-weight: 600; }
+  .how ol { margin: 0; padding: 0 20px 16px 40px; }
+  .how li { margin: 6px 0; }
+  .how p { margin: 0 16px 14px; color: var(--ink-soft); font-size: .95rem; }
+  .wake { color: #8A6414; }
+  a { color: var(--ink); text-underline-offset: 2px; }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
+  .tool { display: inline-flex; align-items: center; gap: 8px; font: 500 .95rem var(--ui); background: transparent; border: 1.5px solid var(--ink);
+          border-radius: 999px; padding: 8px 16px; color: var(--ink); cursor: pointer; transition: background .2s, color .2s; }
+  .tool:hover { background: var(--ink); color: var(--paper); }
+  .tool:disabled { opacity: .45; cursor: not-allowed; background: transparent; color: var(--ink); }
+  .tool svg { width: 18px; height: 18px; flex: none; }
+  .app-head { padding-top: clamp(28px, 6vh, 64px); padding-bottom: 8px; }
+  .app-head h1 { font: 400 clamp(2.2rem, 6vw, 4.2rem)/1.05 var(--deva); margin: 6px 0 8px; }
+  dialog.cam { border: 0; padding: 0; border-radius: 10px; background: var(--ink); color: var(--paper); width: min(92vw, 760px); }
+  dialog.cam::backdrop { background: rgba(27,26,23,.7); }
+  .cam video { display: block; width: 100%; max-height: 70vh; background: #000; object-fit: contain; }
+  .cam .bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 14px 16px; flex-wrap: wrap; }
+  .cam .bar p { margin: 0; font-size: .92rem; opacity: .85; }
+  .cam .shutter { width: 64px; height: 64px; border-radius: 50%; border: 4px solid var(--paper); background: var(--haldi); cursor: pointer; }
+  .cam .close { background: transparent; color: var(--paper); border: 1.5px solid var(--paper); border-radius: 999px; padding: 8px 16px; cursor: pointer; font: 500 .95rem var(--ui); }
+  .tool:hover { border-color: var(--ink); }
+  .tool.live { background: var(--haldi-wash); border-color: var(--haldi); }
+  .tool input { display: none; }
+  .note { font-size: .88rem; color: var(--ink-soft); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; }
+  .stat { background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; }
+  .stat b { display: block; font: 1.7rem var(--deva); color: var(--ink); }
+  .stat span { font-size: .9rem; color: var(--ink-soft); }
+  @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } }
+  .thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; margin: 16px 0 12px; }
+  .thumb { flex: 0 0 auto; background: #fff; border: 2px solid var(--rule); border-radius: 6px; padding: 4px; cursor: pointer; text-align: left; font: .8rem var(--ui); color: var(--ink-soft); }
+  .thumb img { display: block; width: 120px; height: 60px; object-fit: cover; border-radius: 3px; margin-bottom: 4px; }
+  .thumb[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
+  .ms-img { width: 100%; border: 1px solid var(--rule); border-radius: 4px; background: #fff; }
+  .ms-read { font: 1.45rem/1.9 var(--deva); margin: 8px 0; }
+  .ms-read .w { cursor: default; }
+  .w.miss { text-decoration: underline wavy #B42318; text-decoration-thickness: 1.5px; text-underline-offset: 6px; }
+  .gold { font: 1.25rem/1.8 var(--deva); background: #fff; border: 1px dashed var(--rule); border-radius: 4px; padding: 8px 12px; }
+  .live { margin-top: 22px; border: 1.5px solid var(--ink); border-radius: 8px; padding: 18px; }
+  .live-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .live-head h3 { margin: 0; font: 400 1.5rem var(--deva); }
+  .gpu { display: inline-flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--ink-soft); }
+  .gpu i { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); }
+  .gpu.on i { background: var(--leaf); box-shadow: 0 0 0 4px color-mix(in srgb, var(--leaf) 25%, transparent); }
+  .gpu.off i { background: #B42318; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .88rem; color: var(--ink-soft); margin: 6px 0 12px; }
+  .sw { display: inline-block; width: 22px; height: 12px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+  @media (prefers-reduced-motion: no-preference) { .w { transition: background .15s; } }
+</style>
+</head>
+<body>
+<nav class="top" aria-label="Site">
+  <a class="mark" href="/">भाषायंत्र · BhashaYantra</a>
+  <ol>
+    <li><a href="/"><small>01</small>Home</a></li>
+    <li><a href="/app#text" aria-current="page"><small>02</small>Tool</a></li>
+    <li><a href="/app#scan"><small>03</small>Manuscripts</a></li>
+    <li><a href="/about"><small>04</small>How it works</a></li>
+  </ol>
+  <span class="status" id="health">Connecting…</span>
+</nav>
+
+<header class="wrap app-head">
+  <span class="kicker">The tool</span>
+  <h1>Read it, convert it, check it.</h1>
+  <p class="note">Type, speak, photograph, or browse real manuscripts. Words marked yellow are the ones to check.</p>
+</header>
+
+<div class="wrap" id="tool">
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="text">01 · Type in Roman letters</button>
+    <button role="tab" aria-selected="false" data-tab="modi">02 · Modi script</button>
+    <button role="tab" aria-selected="false" data-tab="scan">03 · Manuscripts</button>
+  </nav>
+
+  <!-- Roman -> Indic -->
+  <section class="sheet" id="tab-text">
+    <div class="examples">
+      <span>Try an example:</span>
+      <button class="chip" data-ex-text="kal subah main dilli se mumbai ki train pakdunga, lekin ticket abhi tak confirm nahi hua!" data-ex-lang="hi">Hindi</button>
+      <button class="chip" data-ex-text="aamhi udya punyala jaanar aahot, tithe shaniwarwada baghnar." data-ex-lang="mr">Marathi</button>
+    </div>
+    <div class="tools">
+      <button class="tool" data-camera="roman" title="Photograph printed English-letter text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> Camera</button>
+      <label class="tool" title="Read printed English-letter text from a photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v4h16v-4"/></svg> Upload photo
+        <input type="file" accept="image/*" id="ocrRoman"></label>
+      <span class="note" id="ocrRomanStatus"></span>
+    </div>
+    <label for="roman">Write the way you'd type it on a phone</label>
+    <textarea id="roman" placeholder="kal subah dilli se mumbai ki train pakdunga">kal subah main dilli se mumbai ki train pakdunga, lekin ticket abhi tak confirm nahi hua!</textarea>
+    <div class="row" style="margin-top:12px">
+      <label for="lang">Language</label>
+      <select id="lang"></select>
+      <button class="go" id="goText">Transliterate</button>
+      <button class="quiet copy" id="copyText" hidden>Copy result</button>
+    </div>
+    <div class="result" aria-live="polite">
+      <div class="output" id="out"></div>
+      <div class="status" id="outStatus"></div>
+    </div>
+    <footer>Yellow words are ones the system isn't sure about. Click any word to see other readings and pick the right one; your choice is saved to improve future results.</footer>
+  </section>
+
+  <!-- Modi <-> Devanagari -->
+  <section class="sheet" id="tab-modi" hidden>
+    <div class="examples">
+      <span>Try:</span>
+      <button class="chip" data-modi-ex="श्री गणेशाय नमः" data-dir="to-modi"><span class="d">श्री गणेशाय नमः</span></button>
+      <button class="chip" data-modi-ex="छत्रपती शिवाजी महाराज" data-dir="to-modi"><span class="d">छत्रपती शिवाजी महाराज</span></button>
+      <button class="chip" data-modi-ex="𑘫𑘿𑘨𑘲 𑘐𑘜𑘹𑘫𑘰𑘧 𑘡𑘦𑘾" data-dir="to-deva">A line in Modi, to Devanagari</button>
+    </div>
+    <div class="tools">
+      <button class="tool" id="mic" title="Speak; your browser's speech service writes it in Devanagari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> <span id="micLabel">Speak</span></button>
+      <select id="micLang" aria-label="Speech language"><option value="mr-IN">Marathi</option><option value="hi-IN">Hindi</option></select>
+      <button class="tool" data-camera="deva" title="Photograph printed Devanagari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> Camera</button>
+      <label class="tool" title="Read printed Devanagari from a photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v4h16v-4"/></svg> Upload photo
+        <input type="file" accept="image/*" id="ocrDeva"></label>
+      <span class="note" id="toolStatus"></span>
+    </div>
+    <div class="pair">
+      <div>
+        <label for="modiIn" id="modiInLabel">Devanagari</label>
+        <textarea id="modiIn">श्री गणेशाय नमः । छत्रपती शिवाजी महाराज</textarea>
+      </div>
+      <button class="quiet swap" id="swap" aria-label="Swap direction">⇄</button>
+      <div>
+        <label for="modiOut" id="modiOutLabel">Modi</label>
+        <textarea id="modiOut" readonly></textarea>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="go" id="goModi">Convert</button>
+      <button class="quiet" id="copyModi" hidden>Copy result</button>
+      <span class="status" id="modiStatus"></span>
+    </div>
+  </section>
+
+  <!-- Manuscript placeholder -->
+  <section class="sheet" id="tab-scan" hidden>
+    <div class="stats">
+      <div class="stat"><b>0.31</b><span>character error rate on 60 unseen pages: about 3 in 10 characters need fixing</span></div>
+      <div class="stat"><b>80%</b><span>of pages are a usable first draft (error rate 0.40 or less)</span></div>
+      <div class="stat"><b>89%</b><span>of words marked yellow are really wrong, versus 64% of all words: check these first</span></div>
+    </div>
+    <p class="note">Measured on held-out pages from the MoDeTrans test list, never used in training. We also tried cleaning the scans (denoise, binarise, deskew): it made readings slightly worse (0.33), so we use the raw scan.</p>
+
+    <div class="thumbs" id="msThumbs" role="group" aria-label="Manuscript pages"></div>
+    <img class="ms-img" id="msImg" alt="Selected Modi manuscript page">
+    <div class="legend">
+      <span><i class="sw" style="background:var(--haldi-wash);border-bottom:2px solid var(--haldi)"></i>Model unsure: check first</span>
+      <span id="missKey" hidden><span style="text-decoration:underline wavy #B42318;text-underline-offset:4px;margin-right:6px">word</span>Differs from the expert</span>
+    </div>
+    <label for="msPred" class="note">Machine reading (Devanagari)</label>
+    <div class="ms-read" id="msPred"></div>
+    <label class="note"><input type="checkbox" id="msCompare"> Compare with the expert's transliteration</label>
+    <div class="gold" id="msGold" hidden></div>
+    <p class="note" id="msCredit" style="margin-top:14px"></p>
+    <div class="live" id="live">
+      <div class="live-head">
+        <h3>Read your own page</h3>
+        <span class="gpu" id="gpuState"><i></i>Checking the GPU…</span>
+      </div>
+      <div class="tools" id="liveTools" hidden>
+        <button class="tool" data-camera="ms" title="Photograph a Modi page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> Camera</button>
+        <label class="tool" title="Upload a scan or photo of a Modi page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v4h16v-4"/></svg> Upload page
+          <input type="file" accept="image/*" id="msUpload"></label>
+        <span class="note">Tip: flat page, good light, one page at a time.</span>
+      </div>
+      <div id="liveOut" hidden>
+        <img class="ms-img" id="liveImg" alt="Your uploaded page">
+        <label class="note" for="livePred">Machine reading (Devanagari)</label>
+        <div class="ms-read" id="livePred"></div>
+        <p class="note" id="liveNote"></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="foot">
+  <p><b>BhashaYantra</b> by Team DeepThink, Smart India Hackathon 2026. <a href="/about">How it works and how we measured it →</a></p>
+  <p><a href="https://github.com/anushkak270706-bot/bhashayantra" target="_blank" rel="noopener">Code on GitHub</a></p>
+</footer>
+
+<dialog class="cam" id="cam" aria-label="Camera">
+  <video id="camVideo" playsinline autoplay muted></video>
+  <div class="bar">
+    <p>Hold printed text flat and steady, in good light.</p>
+    <button class="shutter" id="camShot" aria-label="Capture photo"></button>
+    <button class="close" id="camClose">Cancel</button>
+  </div>
+</dialog>
+
+<div class="pick" id="pick" role="menu"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const API = "";                       // same server as this page
+const $ = id => document.getElementById(id);
+let last = null;                       // last /transliterate response
+let modiDir = "to-modi";
+
+function wakeNotice(el) {
+  // Free hosting sleeps when idle; the first request can take up to a minute.
+  return setTimeout(() => { if (el) el.innerHTML = '<span class="wake">Waking up the server (free hosting). The first request can take up to a minute; later ones are fast.</span>'; }, 3500);
+}
+async function call(path, body, statusEl) {
+  const t = wakeNotice(statusEl);
+  try { return await call_(path, body); } finally { clearTimeout(t); }
+}
+async function call_(path, body) {
+  const res = await fetch(API + path, body ? {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)
+  } : {});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "The server rejected the request (" + res.status + ").");
+  return data;
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; setTimeout(() => t.style.display = "none", 2200); }
+
+// Tabs
+document.querySelectorAll('nav[role="tablist"] button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav[role="tablist"] button').forEach(x => x.setAttribute("aria-selected", x === b));
+  ["text", "modi", "scan"].forEach(t => $("tab-" + t).hidden = t !== b.dataset.tab);
+});
+
+// Startup: health + languages
+(async () => {
+  try {
+    const langs = await call("/languages", null, $("health"));
+    const sel = $("lang");
+    Object.entries(langs).filter(([, v]) => v.indicxlit_code)
+      .sort((a, b) => a[1].name.localeCompare(b[1].name))
+      .forEach(([code, v]) => sel.add(new Option(v.name, code, false, code === "hi")));
+    $("health").textContent = "Ready";
+  } catch { $("health").innerHTML = '<span class="error">Backend not running. Start it with: uvicorn backend.main:app --reload</span>'; }
+})();
+
+// Roman -> Indic
+$("goText").onclick = async () => {
+  const text = $("roman").value.trim();
+  if (!text) { $("outStatus").textContent = "Type something first."; return; }
+  $("goText").disabled = true; $("outStatus").textContent = "Working…";
+  try {
+    last = await call("/transliterate", {text, language_code: $("lang").value}, $("outStatus"));
+    last.roman = text;
+    renderOutput(); $("copyText").hidden = false;
+  } catch (e) { $("out").textContent = ""; $("outStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
+  $("goText").disabled = false;
+};
+
+function renderOutput() {
+  // Rebuild from the roman input so punctuation and spacing stay exactly as typed.
+  const tokens = last.roman.split(/(\s+|[^\w\s]+)/).filter(Boolean);
+  const out = $("out"); out.innerHTML = "";
+  let k = 0;
+  tokens.forEach(tok => {
+    if (/\w/.test(tok) && !/^\s+$/.test(tok) && last.words[k]) {
+      const w = last.words[k], idx = k++;
+      const span = document.createElement("span");
+      span.className = "w" + (w.needs_review ? " flag" : "") + (w.fixed || w.learned ? " fixed" : "");
+      if (w.learned) span.title = "Learned from a user correction";
+      span.textContent = w.best; span.tabIndex = 0;
+      span.dataset.roman = tok; span.dataset.idx = idx;
+      span.onclick = e => openPick(span, idx, tok);
+      span.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPick(span, idx, tok); } };
+      out.appendChild(span);
+    } else out.appendChild(document.createTextNode(tok));
+  });
+  const flagged = last.words.filter(w => w.needs_review && !w.fixed).length;
+  $("outStatus").innerHTML = flagged
+    ? `<b>${flagged} word${flagged > 1 ? "s" : ""}</b> marked for checking. Click a word to see other readings.`
+    : "No words flagged. Click any word to see other readings.";
+  const learnedN = last.words.filter(w => w.learned).length;
+  if (learnedN) $("outStatus").innerHTML += ` <span style="color:var(--leaf)">${learnedN} word${learnedN > 1 ? "s" : ""} learned from earlier corrections (green underline).</span>`;
+}
+
+function openPick(span, idx, roman) {
+  const w = last.words[idx], pick = $("pick");
+  pick.innerHTML = `<p>Other readings of “${roman}”</p>`;
+  [...w.alternatives].forEach(alt => {
+    const b = document.createElement("button"); b.textContent = alt; b.setAttribute("role", "menuitem");
+    b.onclick = () => choose(idx, roman, alt); pick.appendChild(b);
+  });
+  const own = document.createElement("div");
+  own.className = "own";
+  own.innerHTML = `<input type="text" aria-label="Type the correct word" placeholder="Type the correct word"><button type="button">Save</button>`;
+  const input = own.querySelector("input");
+  const submit = () => {
+    const typed = input.value.trim();
+    if (!typed) { input.focus(); return; }
+    if (/[A-Za-z]/.test(typed) || typed.length > 40) { toast("Type the word in its own script (e.g. a Hindi/Marathi keyboard)"); return; }
+    choose(idx, roman, typed, true);
+  };
+  own.querySelector("button").onclick = submit;
+  input.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); submit(); } };
+  pick.appendChild(own);
+    const r = span.getBoundingClientRect();
+  pick.style.left = (r.left + window.scrollX) + "px"; pick.style.top = (r.bottom + window.scrollY + 6) + "px";
+  pick.style.display = "block"; pick.querySelector("button")?.focus();
+}
+document.addEventListener("click", e => { if (!e.target.closest(".pick, .w")) $("pick").style.display = "none"; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("pick").style.display = "none"; });
+
+async function choose(idx, roman, alt, typed = false) {
+  const w = last.words[idx], before = w.best;
+  w.alternatives = [before, ...w.alternatives.filter(a => a !== alt && a !== before)];
+  w.best = alt; w.fixed = true; w.needs_review = false;
+  $("pick").style.display = "none"; renderOutput();
+  try {
+    await call("/corrections", {source_text: roman, source_script: "latin", model_output: before,
+                                corrected_output: alt, engine: "indicxlit",
+                                language_code: last.language_code});
+    toast(typed ? "Saved. Once another reviewer agrees, everyone gets this reading." : "Correction saved. BhashaYantra will use it next time.");
+  } catch { toast("Changed here, but the correction could not be saved"); }
+}
+
+// Examples
+document.querySelectorAll("[data-ex-text]").forEach(b => b.onclick = () => {
+  $("roman").value = b.dataset.exText; $("lang").value = b.dataset.exLang; $("goText").click();
+});
+document.querySelectorAll("[data-modi-ex]").forEach(b => b.onclick = () => {
+  setDir(b.dataset.dir); $("modiIn").value = b.dataset.modiEx; $("modiOut").value = ""; $("goModi").click();
+});
+
+// Copy buttons
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch { toast("Select the text and copy it manually"); }
+}
+$("copyText").onclick = () => copy($("out").innerText.trim());
+$("copyModi").onclick = () => copy($("modiOut").value);
+
+// Modi <-> Devanagari
+function setDir(dir) {
+  modiDir = dir;
+  $("modiInLabel").textContent = dir === "to-modi" ? "Devanagari" : "Modi";
+  $("modiOutLabel").textContent = dir === "to-modi" ? "Modi" : "Devanagari";
+}
+$("swap").onclick = () => {
+  modiDir = modiDir === "to-modi" ? "to-deva" : "to-modi";
+  $("modiInLabel").textContent = modiDir === "to-modi" ? "Devanagari" : "Modi";
+  $("modiOutLabel").textContent = modiDir === "to-modi" ? "Modi" : "Devanagari";
+  if ($("modiOut").value) { $("modiIn").value = $("modiOut").value; $("modiOut").value = ""; }
+  $("modiStatus").textContent = "";
+};
+$("goModi").onclick = async () => {
+  const text = $("modiIn").value.trim();
+  if (!text) { $("modiStatus").textContent = "Enter some text first."; return; }
+  const body = modiDir === "to-modi"
+    ? {text, source_script: "devanagari", target_script: "modi"}
+    : {text, target_script: "devanagari"};
+  try {
+    $("modiStatus").textContent = "Working…";
+    const r = await call("/convert-script", body, $("modiStatus"));
+    $("modiOut").value = r.output; $("copyModi").hidden = false;
+    $("modiStatus").textContent = modiDir === "to-deva" ? `Detected script: ${r.source_script}` : "Converted";
+  } catch (e) { $("modiStatus").innerHTML = '<span class="error">' + e.message + '</span>'; }
+};
+
+// ---------- Deep links: /app#text, /app#modi, /app#scan, /app#scan-3 ----------
+async function openFromHash() {
+  const m = location.hash.match(/^#(text|modi|scan)(?:-(\d+))?$/);
+  if (!m) return;
+  document.querySelector(`nav[role="tablist"] button[data-tab="${m[1]}"]`).click();
+  if (m[1] === "scan") { await loadManuscripts(); if (m[2] && MS && MS.gallery[+m[2]]) showPage(+m[2]); }
+  document.getElementById("tool").scrollIntoView({ behavior: "instant", block: "start" });
+}
+window.addEventListener("hashchange", openFromHash);
+document.querySelectorAll('nav[role="tablist"] button').forEach(b => b.addEventListener("click", () => {
+  if (location.hash.slice(1).split("-")[0] !== b.dataset.tab) history.replaceState(null, "", "#" + b.dataset.tab);
+}));
+
+// ---------- Top navigation: jump to a tab ----------
+document.querySelectorAll(".top a[data-go]").forEach(a => a.addEventListener("click", () => {
+  document.querySelector(`nav[role="tablist"] button[data-tab="${a.dataset.go}"]`).click();
+}));
+
+// ---------- Hero counter ----------
+(() => {
+  const el = document.querySelector("[data-count]");
+  if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const target = +el.dataset.count, t0 = performance.now() + 2300, dur = 1600;
+  const tick = now => {
+    const k = Math.min(Math.max((now - t0) / dur, 0), 1), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = Math.round(target * e).toLocaleString("en-IN");
+    if (k < 1) requestAnimationFrame(tick);
+  };
+  el.textContent = "0"; requestAnimationFrame(tick);
+})();
+
+// ---------- Manuscripts gallery ----------
+let MS = null, msIdx = 0;
+const tier = c => c < 0.10 ? "Excellent" : c < 0.20 ? "Good" : c <= 0.40 ? "Usable draft" : "Hard page";
+let msLoading = null;
+function loadManuscripts() { checkGpu(); return msLoading ||= loadManuscriptsOnce(); }
+async function loadManuscriptsOnce() {
+  try {
+    MS = await (await fetch("/static/manuscripts/manuscripts.json")).json();
+  } catch { $("msCredit").textContent = "Could not load the manuscript examples."; return; }
+  $("msThumbs").innerHTML = "";
+  MS.gallery.forEach((g, i) => {
+    const b = document.createElement("button");
+    b.className = "thumb"; b.setAttribute("aria-pressed", i === 0);
+    b.innerHTML = `<img src="/static/manuscripts/${g.filename}" alt="">${tier(g.cer)} · ${g.cer.toFixed(2)}`;
+    b.onclick = () => showPage(i);
+    $("msThumbs").appendChild(b);
+  });
+  $("msCredit").innerHTML = `Readings by the open model <b>${MS.model}</b> (built on ${MS.base_model}), trained on the ${MS.dataset} dataset. BhashaYantra adds the word-level confidence review.`;
+  showPage(0);
+}
+function showPage(i) {
+  msIdx = i;
+  const g = MS.gallery[i], thr = MS.official_summary.word_flags.threshold;
+  document.querySelectorAll(".thumb").forEach((t, k) => t.setAttribute("aria-pressed", k === i));
+  $("msImg").src = `/static/manuscripts/${g.filename}`;
+  const gold = new Set(g.gold.split(/\s+/)), compare = $("msCompare").checked;
+  const words = g.pred.split(/\s+/);
+  $("msPred").innerHTML = "";
+  words.forEach((w, k) => {
+    const s = document.createElement("span");
+    const c = g.word_conf[k] ?? 1;
+    s.className = "w" + (c <= thr ? " flag" : "") + (compare && !gold.has(w) ? " miss" : "");
+    s.title = `confidence ${c.toFixed(2)}`;
+    s.textContent = w;
+    $("msPred").append(s, " ");
+  });
+  $("msGold").textContent = g.gold;
+  $("msGold").hidden = !compare; $("missKey").hidden = !compare;
+}
+$("msCompare").onchange = () => MS && showPage(msIdx);
+document.querySelector('nav[role="tablist"] button[data-tab="scan"]').addEventListener("click", loadManuscripts);
+
+// ---------- Photo to text (runs in the browser with Tesseract.js) ----------
+let tessLoading = null;
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (!tessLoading) tessLoading = new Promise((res, rej) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    sc.onload = res; sc.onerror = () => rej(new Error("Could not load the text reader."));
+    document.head.appendChild(sc);
+  });
+  return tessLoading;
+}
+async function ocr(file, lang, statusEl) {
+  statusEl.textContent = "Loading text reader…";
+  await loadTesseract();
+  const { data } = await Tesseract.recognize(file, lang, {
+    logger: m => { if (m.status === "recognizing text") statusEl.textContent = `Reading photo… ${Math.round(m.progress * 100)}%`; }
+  });
+  return data.text.replace(/\s+/g, " ").trim();
+}
+// ---------- Live manuscript reading (GPU notebook via the server) ----------
+async function checkGpu() {
+  const el = $("gpuState");
+  try {
+    const st = await (await fetch("/manuscript/status")).json();
+    el.className = "gpu " + (st.online ? "on" : "off");
+    el.innerHTML = st.online ? "<i></i>GPU online" : "<i></i>GPU offline right now";
+    $("liveTools").hidden = !st.online;
+    if (!st.online) $("liveNote").textContent = "";
+    if (!st.online) el.title = "The manuscript model runs on a GPU session that isn't running at the moment. The example pages above show real results.";
+  } catch { el.className = "gpu off"; el.innerHTML = "<i></i>GPU status unavailable"; }
+}
+async function shrink(img, max = 2000) {           // keep uploads small and fast
+  const bmp = await createImageBitmap(img);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
+}
+async function readManuscript(original) {
+  const file = await shrink(original);
+  $("liveOut").hidden = false;
+  $("liveImg").src = URL.createObjectURL(file);
+  $("livePred").textContent = "";
+  $("liveNote").textContent = "Reading the page on the GPU… usually 20–60 seconds.";
+  const fd = new FormData(); fd.append("file", file, "page.jpg");
+  try {
+    const res = await fetch("/manuscript/read", { method: "POST", body: fd });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.detail || "Could not read that page.");
+    $("livePred").innerHTML = "";
+    d.words.forEach(w => {
+      const sp = document.createElement("span");
+      sp.className = "w" + (w.flagged ? " flag" : ""); sp.title = `confidence ${w.confidence.toFixed(2)}`;
+      sp.textContent = w.text; $("livePred").append(sp, " ");
+    });
+    const flagged = d.words.filter(w => w.flagged).length;
+    $("liveNote").innerHTML = `Read in ${d.seconds ?? "?"} s. <b>${flagged}</b> of ${d.words.length} words marked for checking.` +
+      (d.loop_detected ? " The first reading got stuck repeating itself, so we re-read a cleaned copy of the scan." : "") + " Your photo was not stored.";
+  } catch (err) {
+    $("liveNote").innerHTML = '<span class="error">' + err.message + "</span>"; checkGpu();
+  }
+}
+$("msUpload").onchange = e => { const f = e.target.files[0]; if (f) readManuscript(f); e.target.value = ""; };
+
+async function handleImage(target, img) {
+  if (target === "ms") return readManuscript(img);
+  const statusEl = target === "roman" ? $("ocrRomanStatus") : $("toolStatus");
+  try {
+    const t = await ocr(img, target === "roman" ? "eng" : "mar", statusEl);
+    if (!t) { statusEl.textContent = "No text found. Try a sharper, closer photo."; return; }
+    if (target === "roman") {
+      $("roman").value = t; statusEl.textContent = "Text read from photo. Check it above."; $("goText").click();
+    } else {
+      setDir("to-modi"); $("modiIn").value = t; $("modiOut").value = "";
+      statusEl.textContent = "Text read from photo."; $("goModi").click();
+    }
+  } catch (err) { statusEl.innerHTML = '<span class="error">' + err.message + '</span>'; }
+}
+$("ocrRoman").onchange = e => { const f = e.target.files[0]; if (f) handleImage("roman", f); e.target.value = ""; };
+$("ocrDeva").onchange = e => { const f = e.target.files[0]; if (f) handleImage("deva", f); e.target.value = ""; };
+
+// Live camera: back camera on phones; falls back to the phone's camera app
+let camStream = null, camTarget = null;
+async function openCamera(target) {
+  camTarget = target;
+  const statusEl = target === "roman" ? $("ocrRomanStatus") : target === "ms" ? $("liveNote") : $("toolStatus");
+  if (!navigator.mediaDevices?.getUserMedia) {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*"; inp.capture = "environment";
+    inp.onchange = () => inp.files[0] && handleImage(target, inp.files[0]);
+    inp.click(); return;
+  }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false });
+    $("camVideo").srcObject = camStream; $("cam").showModal();
+  } catch (err) {
+    statusEl.textContent = err.name === "NotAllowedError" ? "Camera permission was blocked. Allow it in the address bar, or use Upload photo." : "No camera available. Use Upload photo instead.";
+  }
+}
+function closeCamera() { camStream?.getTracks().forEach(t => t.stop()); camStream = null; if ($("cam").open) $("cam").close(); }
+document.querySelectorAll("[data-camera]").forEach(b => b.onclick = () => openCamera(b.dataset.camera));
+$("camClose").onclick = closeCamera;
+$("cam").addEventListener("cancel", closeCamera);
+$("camShot").onclick = async () => {
+  const v = $("camVideo"), c = document.createElement("canvas");
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext("2d").drawImage(v, 0, 0);
+  const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.92));
+  closeCamera(); handleImage(camTarget, blob);
+};
+
+// ---------- Voice (browser speech recognition, Modi tab only) ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) {
+  $("mic").disabled = true; $("micLang").disabled = true;
+  $("mic").title = "Speech input isn't supported in this browser (try Chrome or Edge).";
+} else {
+  let rec = null;
+  $("mic").onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = $("micLang").value; rec.interimResults = true;
+    setDir("to-modi"); $("modiOut").value = "";
+    $("mic").classList.add("live"); $("micLabel").textContent = "Stop";
+    $("toolStatus").textContent = "Listening…";
+    rec.onresult = ev => { $("modiIn").value = Array.from(ev.results).map(r => r[0].transcript).join(" "); };
+    rec.onerror = ev => { $("toolStatus").textContent = ev.error === "not-allowed" ? "Microphone permission was blocked." : "Couldn't hear that. Try again."; };
+    rec.onend = () => {
+      rec = null; $("mic").classList.remove("live"); $("micLabel").textContent = "Speak";
+      if ($("modiIn").value.trim()) { $("toolStatus").textContent = ""; $("goModi").click(); }
+    };
+    rec.start();
+  };
+}
+openFromHash();
+</script>
+</body>
+</html>
