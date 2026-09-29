@@ -167,6 +167,13 @@
   .ms-read .w { cursor: default; }
   .w.miss { text-decoration: underline wavy #B42318; text-decoration-thickness: 1.5px; text-underline-offset: 6px; }
   .gold { font: 1.25rem/1.8 var(--deva); background: #fff; border: 1px dashed var(--rule); border-radius: 4px; padding: 8px 12px; }
+  .live { margin-top: 22px; border: 1.5px solid var(--ink); border-radius: 8px; padding: 18px; }
+  .live-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .live-head h3 { margin: 0; font: 400 1.5rem var(--deva); }
+  .gpu { display: inline-flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--ink-soft); }
+  .gpu i { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); }
+  .gpu.on i { background: var(--leaf); box-shadow: 0 0 0 4px color-mix(in srgb, var(--leaf) 25%, transparent); }
+  .gpu.off i { background: #B42318; }
   .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .88rem; color: var(--ink-soft); margin: 6px 0 12px; }
   .sw { display: inline-block; width: 22px; height: 12px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
   @media (prefers-reduced-motion: no-preference) { .w { transition: background .15s; } }
@@ -279,8 +286,23 @@
     <label class="note"><input type="checkbox" id="msCompare"> Compare with the expert's transliteration</label>
     <div class="gold" id="msGold" hidden></div>
     <p class="note" id="msCredit" style="margin-top:14px"></p>
-    <div class="drop" style="padding:20px;margin-top:8px">
-      <p><b>Upload your own page:</b> coming with GPU hosting. These readings were generated on a GPU; our free server can't run the vision model yet.</p>
+    <div class="live" id="live">
+      <div class="live-head">
+        <h3>Read your own page</h3>
+        <span class="gpu" id="gpuState"><i></i>Checking the GPU…</span>
+      </div>
+      <div class="tools" id="liveTools" hidden>
+        <button class="tool" data-camera="ms" title="Photograph a Modi page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> Camera</button>
+        <label class="tool" title="Upload a scan or photo of a Modi page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v4h16v-4"/></svg> Upload page
+          <input type="file" accept="image/*" id="msUpload"></label>
+        <span class="note">Tip: flat page, good light, one page at a time.</span>
+      </div>
+      <div id="liveOut" hidden>
+        <img class="ms-img" id="liveImg" alt="Your uploaded page">
+        <label class="note" for="livePred">Machine reading (Devanagari)</label>
+        <div class="ms-read" id="livePred"></div>
+        <p class="note" id="liveNote"></p>
+      </div>
     </div>
   </section>
 
@@ -502,7 +524,7 @@ document.querySelectorAll(".top a[data-go]").forEach(a => a.addEventListener("cl
 let MS = null, msIdx = 0;
 const tier = c => c < 0.10 ? "Excellent" : c < 0.20 ? "Good" : c <= 0.40 ? "Usable draft" : "Hard page";
 let msLoading = null;
-function loadManuscripts() { return msLoading ||= loadManuscriptsOnce(); }
+function loadManuscripts() { checkGpu(); return msLoading ||= loadManuscriptsOnce(); }
 async function loadManuscriptsOnce() {
   try {
     MS = await (await fetch("/static/manuscripts/manuscripts.json")).json();
@@ -560,7 +582,54 @@ async function ocr(file, lang, statusEl) {
   });
   return data.text.replace(/\s+/g, " ").trim();
 }
+// ---------- Live manuscript reading (GPU notebook via the server) ----------
+async function checkGpu() {
+  const el = $("gpuState");
+  try {
+    const st = await (await fetch("/manuscript/status")).json();
+    el.className = "gpu " + (st.online ? "on" : "off");
+    el.innerHTML = st.online ? "<i></i>GPU online" : "<i></i>GPU offline right now";
+    $("liveTools").hidden = !st.online;
+    if (!st.online) $("liveNote").textContent = "";
+    if (!st.online) el.title = "The manuscript model runs on a GPU session that isn't running at the moment. The example pages above show real results.";
+  } catch { el.className = "gpu off"; el.innerHTML = "<i></i>GPU status unavailable"; }
+}
+async function shrink(img, max = 2000) {           // keep uploads small and fast
+  const bmp = await createImageBitmap(img);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
+}
+async function readManuscript(original) {
+  const file = await shrink(original);
+  $("liveOut").hidden = false;
+  $("liveImg").src = URL.createObjectURL(file);
+  $("livePred").textContent = "";
+  $("liveNote").textContent = "Reading the page on the GPU… usually 20–60 seconds.";
+  const fd = new FormData(); fd.append("file", file, "page.jpg");
+  try {
+    const res = await fetch("/manuscript/read", { method: "POST", body: fd });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.detail || "Could not read that page.");
+    $("livePred").innerHTML = "";
+    d.words.forEach(w => {
+      const sp = document.createElement("span");
+      sp.className = "w" + (w.flagged ? " flag" : ""); sp.title = `confidence ${w.confidence.toFixed(2)}`;
+      sp.textContent = w.text; $("livePred").append(sp, " ");
+    });
+    const flagged = d.words.filter(w => w.flagged).length;
+    $("liveNote").innerHTML = `Read in ${d.seconds ?? "?"} s. <b>${flagged}</b> of ${d.words.length} words marked for checking.` +
+      (d.loop_detected ? " The first reading got stuck repeating itself, so we re-read a cleaned copy of the scan." : "") + " Your photo was not stored.";
+  } catch (err) {
+    $("liveNote").innerHTML = '<span class="error">' + err.message + "</span>"; checkGpu();
+  }
+}
+$("msUpload").onchange = e => { const f = e.target.files[0]; if (f) readManuscript(f); e.target.value = ""; };
+
 async function handleImage(target, img) {
+  if (target === "ms") return readManuscript(img);
   const statusEl = target === "roman" ? $("ocrRomanStatus") : $("toolStatus");
   try {
     const t = await ocr(img, target === "roman" ? "eng" : "mar", statusEl);
@@ -580,7 +649,7 @@ $("ocrDeva").onchange = e => { const f = e.target.files[0]; if (f) handleImage("
 let camStream = null, camTarget = null;
 async function openCamera(target) {
   camTarget = target;
-  const statusEl = target === "roman" ? $("ocrRomanStatus") : $("toolStatus");
+  const statusEl = target === "roman" ? $("ocrRomanStatus") : target === "ms" ? $("liveNote") : $("toolStatus");
   if (!navigator.mediaDevices?.getUserMedia) {
     const inp = document.createElement("input");
     inp.type = "file"; inp.accept = "image/*"; inp.capture = "environment";

@@ -375,3 +375,7 @@ def web_app():
 # Static files (manuscript gallery images and data)
 from fastapi.staticfiles import StaticFiles
 app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")
+
+# Live manuscript reading via the Colab GPU
+from backend.services.gpu_bridge import router as gpu_router
+app.include_router(gpu_router)

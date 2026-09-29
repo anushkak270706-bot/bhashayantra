@@ -8,3 +8,5 @@ huggingface_hub
 indic_transliteration
 wordfreq
 psycopg[binary]
+httpx
+python-multipart
